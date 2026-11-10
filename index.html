@@ -55,6 +55,14 @@
     #ltitle, #ltext { transition: opacity .25s; }
     .swap #ltitle, .swap #ltext { opacity: 0; }
 
+    /* hands */
+    #cam { position: fixed; left: 14px; bottom: 14px; width: 150px; border-radius: 14px; border: 3px solid #fff; transform: scaleX(-1); z-index: 5; display: none; background: #0b4a7a; opacity: .9; }
+    #cursor { position: fixed; left: 0; top: 0; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; z-index: 30; pointer-events: none; display: none; border: 4px solid #fff; background: conic-gradient(#ffd23f calc(var(--p, 0) * 360deg), #ffffff33 0); box-shadow: 0 0 0 3px #0b4a7a66; }
+    #cursor::after { content: ''; position: absolute; inset: 12px; border-radius: 50%; background: #ffffffe6; }
+    #cursor.palm { background: conic-gradient(#ff5fa2 calc(var(--p, 0) * 360deg), #ffffff33 0); }
+    #toast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 25; background: #fff; color: #0b4a7a; font-weight: 700; padding: 10px 16px; border-radius: 12px; display: none; max-width: 90vw; text-align: center; }
+    .chip.hover { transform: translateY(-2px) scale(1.06); background: #fff; }
+
     @media (max-aspect-ratio: 1/1) {
       #scroll { right: 50%; left: auto; top: auto; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(50%); width: min(94vw, 480px); }
       #ltext { font-size: 18px; min-height: 7em; }
@@ -75,7 +83,7 @@
   <canvas id="gl"></canvas>
 
   <div id="bar"></div>
-  <div id="hint">Pick a topic or tap a fish · swipe ← → for lessons · Esc to let the fish go home</div>
+  <div id="hint">Pick a topic or tap a fish · swipe ← → for lessons · Esc to let the fish go home<br>🖐 Hands: point &amp; hold on a fish · swipe your hand · open palm to finish</div>
 
   <div id="scroll" aria-live="polite">
     <div class="rod"></div>
@@ -94,6 +102,10 @@
     </div></div>
     <div class="rod"></div>
   </div>
+
+  <video id="cam" playsinline muted></video>
+  <div id="cursor"></div>
+  <div id="toast"></div>
 
   <div id="start"><div>
     <h1>AI<br>Aquarium</h1>

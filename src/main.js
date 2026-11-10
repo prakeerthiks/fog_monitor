@@ -258,6 +258,115 @@ $('start').addEventListener('click', () => {
   $('start').classList.add('gone');
 });
 
+// ---------- hand control (3 simple gestures) ----------
+// point + hold = talk to fish | swipe hand = next/prev | open palm held = done
+const DWELL = 0.8;
+const PALM_HOLD = 1.0;
+const camVideo = $('cam');
+const cursorEl = $('cursor');
+const toastEl = $('toast');
+let hands = null;
+let handsOn = false;
+let dwell = { id: null, t: 0 };
+let palmT = 0;
+
+function toast(msg, ms = 3500) {
+  toastEl.textContent = msg;
+  toastEl.style.display = 'block';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => (toastEl.style.display = 'none'), ms);
+}
+
+const handBtn = document.createElement('button');
+handBtn.className = 'chip icon';
+handBtn.textContent = '🖐';
+handBtn.title = 'Hand control (webcam)';
+bar.appendChild(handBtn);
+handBtn.onclick = async () => {
+  initAudio();
+  if (handsOn) {
+    hands.stop();
+    handsOn = false;
+    camVideo.style.display = 'none';
+    cursorEl.style.display = 'none';
+    handBtn.classList.remove('active');
+    return;
+  }
+  try {
+    toast('Loading hand tracking… allow the camera 📷', 8000);
+    if (!hands) {
+      const { Hands } = await import('./hands.js');
+      hands = new Hands(camVideo);
+    }
+    await Promise.race([
+      hands.start(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('hand tracking timed out')), 25000))
+    ]);
+    handsOn = true;
+    camVideo.style.display = 'block';
+    handBtn.classList.add('active');
+    toast('Hands on! Point at a fish and hold still 🐠', 4000);
+  } catch (err) {
+    console.warn(err);
+    handsOn = false;
+    toast('Camera or hand tracking unavailable. Mouse and touch still work!', 5000);
+  }
+};
+
+// add data-id on chips for dwell targeting
+chips.forEach((c, i) => (c.dataset.id = topics[i].id));
+
+function handleHand(dt, nowSec, injected) {
+  if (!handsOn && !injected) return;
+  const s = injected || hands.poll(nowSec);
+  if (!s.present) {
+    cursorEl.style.display = 'none';
+    dwell = { id: null, t: 0 };
+    palmT = 0;
+    return;
+  }
+  const px = s.x * window.innerWidth;
+  const py = s.y * window.innerHeight;
+  cursorEl.style.display = 'block';
+  cursorEl.style.transform = `translate(${px}px, ${py}px)`;
+  chips.forEach((c) => c.classList.remove('hover'));
+
+  if (!focus) {
+    // overview: dwell on a topic chip or a fish
+    cursorEl.classList.remove('palm');
+    let id = null;
+    const el = document.elementFromPoint(px, py);
+    const chip = el && el.closest && el.closest('.chip[data-id]');
+    if (chip) {
+      id = chip.dataset.id;
+      chip.classList.add('hover');
+    } else {
+      const f = pickFish({ clientX: px, clientY: py });
+      if (f) id = f.topic.id;
+    }
+    if (id && id === dwell.id) dwell.t += dt;
+    else dwell = { id, t: 0 };
+    cursorEl.style.setProperty('--p', id ? Math.min(dwell.t / DWELL, 1) : 0);
+    if (id && dwell.t >= DWELL) {
+      dwell = { id: null, t: 0 };
+      selectTopic(id);
+    }
+    palmT = 0;
+  } else {
+    // focused: swipe for lessons, open palm to finish
+    dwell = { id: null, t: 0 };
+    if (s.swipe) go(s.swipe === 'left' ? 1 : -1);
+    if (s.openPalm && s.still) palmT += dt;
+    else palmT = Math.max(0, palmT - dt * 2);
+    cursorEl.classList.add('palm');
+    cursorEl.style.setProperty('--p', Math.min(palmT / PALM_HOLD, 1));
+    if (palmT >= PALM_HOLD) {
+      palmT = 0;
+      leave();
+    }
+  }
+}
+
 // ---------- resize + loop ----------
 function resize() {
   const w = window.innerWidth;
@@ -312,6 +421,7 @@ function frame() {
   }
   updateTalkBubbles(dt, t);
 
+  handleHand(dt, t);
   updateCamera(dt, t);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
@@ -319,4 +429,11 @@ function frame() {
 frame();
 
 // handy for testing in the console
-window.__aq = { selectTopic, leave, go, teachers, get focus() { return focus; } };
+window.__aq = { selectTopic, leave, go, teachers, fakeHand: (s, secs = 1) => {
+  // test helper: feed a synthetic hand state for `secs` seconds
+  const end = performance.now() + secs * 1000;
+  const iv = setInterval(() => {
+    handleHand(1 / 60, clock.elapsedTime, { present: true, swipe: null, ...s });
+    if (performance.now() > end) clearInterval(iv);
+  }, 16);
+}, get focus() { return focus; } };
