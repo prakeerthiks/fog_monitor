@@ -1,0 +1,91 @@
+{
+  "topics": [
+    {
+      "id": "agents",
+      "title": "AI Agents: Setting Up",
+      "chip": "🤖 Agents",
+      "fish": "clown",
+      "name": "Coral the Clownfish",
+      "lessons": [
+        {
+          "title": "What is an agent?",
+          "text": "A chatbot answers. An agent acts. It is an AI model plus tools plus a loop: think, use a tool, look at the result, repeat until the job is done."
+        },
+        {
+          "title": "Pick one tiny job",
+          "text": "Do not build 'an assistant for everything'. Pick one boring, repeatable task, like sorting your inbox or summarizing a daily report. Small jobs actually work."
+        },
+        {
+          "title": "Give it tools",
+          "text": "Tools are what let an agent touch the world: search, read files, send an email, call an API. Give it only the tools the job needs. Fewer tools means fewer mistakes."
+        },
+        {
+          "title": "Write clear instructions",
+          "text": "Tell the agent its goal, its rules, and what 'done' looks like. Add a few examples. Good instructions beat a fancy model."
+        },
+        {
+          "title": "Keep a human in the loop",
+          "text": "Let the agent draft and you approve, at least at first. Never let it spend money or send things unchecked until you have watched it succeed many times."
+        }
+      ]
+    },
+    {
+      "id": "coding",
+      "title": "Coding in 2026: Basics",
+      "chip": "💻 Coding",
+      "fish": "puffer",
+      "name": "Pico the Pufferfish",
+      "lessons": [
+        {
+          "title": "You direct, AI types",
+          "text": "In 2026 many people build by describing what they want and letting AI write the code. Your job becomes steering: clear goals, small steps, and checking the results."
+        },
+        {
+          "title": "Specs beat vibes",
+          "text": "Vague prompts give vague apps. Write down what it should do, what it looks like, and what counts as done. A short written plan saves hours."
+        },
+        {
+          "title": "Small steps, then save",
+          "text": "Ask for one feature at a time. When something works, commit it with git. Commits are your undo button when a change breaks things."
+        },
+        {
+          "title": "Learn to read code",
+          "text": "You do not need to write everything, but learn to read it. HTML, CSS and a little JavaScript cover most web projects. Reading lets you spot what is wrong."
+        },
+        {
+          "title": "Ship it and share it",
+          "text": "Put it online with a free host like GitHub Pages or Netlify. A live link beats a folder on your laptop, and it is great content to show off."
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "title": "Trending AI Tools",
+      "chip": "✨ Tools",
+      "fish": "angel",
+      "name": "Angel the Angelfish",
+      "lessons": [
+        {
+          "title": "Chat assistants",
+          "text": "Claude, ChatGPT and Gemini are the everyday helpers for writing, thinking, research and learning. Try a few and keep the one that fits how you work."
+        },
+        {
+          "title": "AI code tools",
+          "text": "Tools like Claude Code and Cursor write and edit code inside your project. They are how solo makers build real apps fast."
+        },
+        {
+          "title": "Search and research",
+          "text": "Perplexity and NotebookLM help you find answers and turn your own notes and documents into summaries you can question."
+        },
+        {
+          "title": "Make images and video",
+          "text": "Image and video generators let you create visuals, thumbnails and clips without a studio. Great for content, but always check the usage rules."
+        },
+        {
+          "title": "Automate the boring stuff",
+          "text": "Zapier and n8n connect your apps so repeat tasks run themselves, and AI can sit in the middle to read, sort and write. Start with one workflow."
+        }
+      ]
+    }
+  ]
+}
