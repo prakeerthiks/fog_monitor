@@ -115,6 +115,24 @@ export function sfxSwipe() {
   tone(300, 0.15, 0.08, 'triangle', 600);
 }
 
+// Soft marimba-like notes that wander up and down a pentatonic scale (sounds like a little melody)
+const TYPE_SCALE = [392.0, 440.0, 523.25, 587.33, 659.25, 783.99, 880.0, 1046.5];
+let typeIdx = 2;
 export function sfxBlip() {
-  tone(900 + Math.random() * 200, 0.04, 0.025, 'square');
+  if (!ctx) return;
+  const r = Math.random();
+  typeIdx += r < 0.4 ? 1 : r < 0.75 ? -1 : r < 0.9 ? 2 : -2;
+  typeIdx = Math.max(0, Math.min(TYPE_SCALE.length - 1, typeIdx));
+  const f = TYPE_SCALE[typeIdx];
+  tone(f, 0.38, 0.05, 'sine');
+  tone(f * 2, 0.18, 0.012, 'sine');
+}
+
+export function sfxCorrect() {
+  [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => tone(f, 0.5, 0.09, 'triangle'), i * 110));
+}
+
+export function sfxWrong() {
+  tone(330, 0.35, 0.07, 'sine', 247);
+  setTimeout(() => tone(247, 0.4, 0.06, 'sine', 196), 180);
 }

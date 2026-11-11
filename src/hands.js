@@ -20,7 +20,7 @@ export class Hands {
     this.samples = [];
     this.lastSwipe = -10;
     this.lastVideoTime = -1;
-    this.state = { present: false, x: 0.5, y: 0.5, openPalm: false, still: false, swipe: null };
+    this.state = { present: false, x: 0.5, y: 0.5, openPalm: false, twoFingers: false, still: false };
   }
 
   async start() {
@@ -52,7 +52,7 @@ export class Hands {
     if (this.stream) this.stream.getTracks().forEach((t) => t.stop());
     this.stream = null;
     this.video.srcObject = null;
-    this.state = { present: false, x: 0.5, y: 0.5, openPalm: false, still: false, swipe: null };
+    this.state = { present: false, x: 0.5, y: 0.5, openPalm: false, twoFingers: false, still: false };
   }
 
   // call once per frame; returns the current simple state
@@ -72,6 +72,7 @@ export class Hands {
     if (!lm) {
       s.present = false;
       s.openPalm = false;
+      s.twoFingers = false;
       this.samples.length = 0;
       return s;
     }
@@ -91,6 +92,9 @@ export class Hands {
     // open palm: four fingertips above their middle joints (hand upright) + thumb out
     const up = (tip, pip) => lm[tip].y < lm[pip].y - 0.02;
     const fingersUp = up(8, 6) && up(12, 10) && up(16, 14) && up(20, 18);
+    const curled = (tip, pip) => lm[tip].y > lm[pip].y;
+    // two fingers up (index + middle), ring + pinky folded
+    s.twoFingers = up(8, 6) && up(12, 10) && curled(16, 14) && curled(20, 18);
     const thumbOut = Math.abs(lm[4].x - lm[2].x) > 0.04;
     s.openPalm = fingersUp && thumbOut;
 

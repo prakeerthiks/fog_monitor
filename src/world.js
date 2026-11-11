@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { voxelMesh, voxMat } from './fish.js';
+import { voxelMesh, voxMat, cullBuried } from './fish.js';
 
 export const FLOOR_Y = -3;
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -24,8 +24,8 @@ export function buildWorld(scene) {
   // ---- Sand floor: small 0.5 tiles with gentle bumps ----
   const T = 0.5;
   const sandVox = [];
-  for (let x = -20; x <= 20; x += T) {
-    for (let z = -12; z <= 12; z += T) {
+  for (let x = -22; x <= 22; x += T) {
+    for (let z = -11; z <= 8; z += T) {
       const lump = Math.sin(x * 0.7) * Math.cos(z * 0.9) > 0.55 && z < 3.5 && Math.abs(x) % 9 > 1;
       sandVox.push({ x: x / T, y: (FLOOR_Y - T / 2) / T, z: z / T, c: tweak(pick(SAND), rnd(-0.03, 0.03)) });
       if (lump) sandVox.push({ x: x / T, y: (FLOOR_Y + T / 2) / T, z: z / T, c: tweak(pick(SAND), rnd(-0.03, 0.03)) });
@@ -38,10 +38,10 @@ export function buildWorld(scene) {
   const coralVox = [];
   const coralSpot = () => {
     for (let tries = 0; tries < 20; tries++) {
-      const x = rnd(-19, 19);
+      const x = rnd(-21, 21);
       const z = rnd(-11, 3.5);
       const behind = z < -3.6;
-      const sides = Math.abs(x) > 14.5;
+      const sides = Math.abs(x) > 17;
       if (behind || sides) return [x, z];
     }
     return [rnd(-19, -15), -6];
@@ -75,7 +75,7 @@ export function buildWorld(scene) {
 
   // ---- Seaweed (sways) ----
   const weedGeo = new THREE.BoxGeometry(0.16, 0.2, 0.16);
-  for (let n = 0; n < 44; n++) {
+  for (let n = 0; n < 26; n++) {
     const [x, z] = coralSpot();
     const g = new THREE.Group();
     const h = 7 + Math.floor(Math.random() * 9);
@@ -96,14 +96,16 @@ export function buildWorld(scene) {
   }
 
   // ---- Homes: rounded voxel burrows on the sea bed ----
-  const CELL = 0.3;
+  const CELL = 0.22;
   const W = 26;
   const H = 15;
   const D = 6;
   const homeDefs = [
-    { x: -9, color: 0xff7eb6, trim: 0xffd0e6 },
-    { x: 0, color: 0x3eead0, trim: 0xc9fff4 },
-    { x: 9, color: 0xc08bff, trim: 0xeed9ff }
+    { x: -12.4, color: 0xffa24d, trim: 0xffdcb0 },
+    { x: -6.2, color: 0xffd84d, trim: 0xfff0a8 },
+    { x: 0, color: 0x4fb4ff, trim: 0xcdeaff },
+    { x: 6.2, color: 0x6c8cff, trim: 0xd3dcff },
+    { x: 12.4, color: 0xff7eb6, trim: 0xffd0e6 }
   ];
   const homes = homeDefs.map((hd) => {
     const vox = [];
@@ -137,15 +139,15 @@ export function buildWorld(scene) {
       const x = Math.floor(cx + rnd(-4, 4));
       vox.push({ x, y: H - 3 - Math.floor(Math.abs(x - cx) * 0.9), z: 1 + Math.floor(Math.random() * 3), c: pick([0xffffff, 0xffe86b, hd.trim]) });
     }
-    const mesh = voxelMesh(vox, CELL);
+    const mesh = voxelMesh(cullBuried(vox), CELL);
     mesh.position.set(hd.x - (cx * CELL), FLOOR_Y + CELL / 2, -2.2 - D * CELL * 0.5);
     group.add(mesh);
 
     const midZ = -2.2 - D * CELL * 0.5 + (D * CELL) / 2 - 0.2; // inside, just in front of back wall
     return {
       x: hd.x,
-      entrance: new THREE.Vector3(hd.x, FLOOR_Y + 1.25, 0.6),
-      inside: new THREE.Vector3(hd.x, FLOOR_Y + 1.25, midZ + 0.05)
+      entrance: new THREE.Vector3(hd.x, FLOOR_Y + 1.0, 0.6),
+      inside: new THREE.Vector3(hd.x, FLOOR_Y + 1.0, midZ + 0.05)
     };
   });
 
@@ -177,7 +179,7 @@ export function buildWorld(scene) {
     bubCount
   );
   const seeds = Array.from({ length: bubCount }, () => ({
-    x: rnd(-16, 16),
+    x: rnd(-22, 22),
     z: rnd(-9, 6),
     y: rnd(FLOOR_Y, 10),
     s: rnd(0.4, 1.1),

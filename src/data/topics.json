@@ -1,49 +1,123 @@
 {
   "topics": [
     {
-      "id": "agents",
-      "title": "AI Agents: Setting Up",
-      "chip": "🤖 Agents",
+      "id": "what",
+      "chip": "🤖 What is it?",
       "fish": "clown",
+      "tint": null,
       "name": "Coral the Clownfish",
-      "points": [
-        "An agent is an AI model + tools + a loop: think, act, check, repeat.",
-        "Start with ONE tiny, boring, repeatable job.",
-        "Give it only the tools it needs: search, files, email.",
-        "Write clear goals, rules and what 'done' looks like.",
-        "Keep a human approving the important steps."
+      "title": "What is an AI agent?",
+      "bullets": [
+        "A chatbot answers once. An agent keeps working until the goal is done.",
+        "It runs a loop: think, use a tool, check the result, repeat."
       ],
-      "fishFact": "Clownfish live safely inside sea anemones, whose stings don't hurt them."
-    },
-    {
-      "id": "coding",
-      "title": "Coding in 2026: Basics",
-      "chip": "💻 Coding",
-      "fish": "puffer",
-      "name": "Pico the Pufferfish",
-      "points": [
-        "You steer, AI types: describe what you want, check what comes back.",
-        "Write a short spec first. Vague prompts make vague apps.",
-        "Build one feature at a time and save with git after each win.",
-        "Learn to read HTML, CSS and a little JavaScript.",
-        "Ship it free on GitHub Pages or Netlify."
-      ],
-      "fishFact": "Pufferfish puff up by gulping water, making them a big round ball."
+      "tip": "Judge an agent by outcomes: did the job actually get done?",
+      "diagram": {
+        "type": "flow",
+        "nodes": [["🎯", "Goal"], ["🧠", "Think"], ["🛠️", "Act"], ["👀", "Check"]],
+        "loop": { "from": 3, "to": 1, "label": "repeat" }
+      },
+      "quiz": {
+        "q": "What makes an agent different from a chatbot?",
+        "options": ["It answers faster", "It uses tools in a loop until done", "It only works offline"],
+        "answer": 1,
+        "why": "Agents act, check the result and repeat. Chatbots just reply."
+      }
     },
     {
       "id": "tools",
-      "title": "Trending AI Tools",
-      "chip": "✨ Tools",
-      "fish": "angel",
-      "name": "Angel the Angelfish",
-      "points": [
-        "Chat helpers: Claude, ChatGPT, Gemini for thinking and writing.",
-        "Code tools: Claude Code and Cursor build real apps with you.",
-        "Research: Perplexity and NotebookLM answer from sources.",
-        "Create: image and video generators for visuals and clips.",
-        "Automate: Zapier and n8n run your boring tasks for you."
+      "chip": "🧰 Tools",
+      "fish": "puffer",
+      "tint": null,
+      "name": "Pico the Pufferfish",
+      "title": "Give it the right tools",
+      "bullets": [
+        "Tools let an agent do things: search, read files, send email, call an API.",
+        "Fewer tools means fewer mistakes. Give only what the job needs."
       ],
-      "fishFact": "Many young angelfish look totally different from the adults they grow into."
+      "tip": "Start read-only. Add 'write' powers like sending or deleting only after it behaves.",
+      "diagram": {
+        "type": "hub",
+        "center": ["🤖", "Agent"],
+        "nodes": [["🔎", "Search"], ["📁", "Files"], ["✉️", "Email"], ["🔌", "API"]]
+      },
+      "quiz": {
+        "q": "How many tools should a new agent get?",
+        "options": ["Only what the job needs", "As many as possible", "None at all"],
+        "answer": 0,
+        "why": "Fewer tools means fewer ways for it to go wrong."
+      }
+    },
+    {
+      "id": "instructions",
+      "chip": "📝 Instructions",
+      "fish": "angel",
+      "tint": null,
+      "name": "Angel the Angelfish",
+      "title": "Write clear instructions",
+      "bullets": [
+        "Tell it the goal, the rules, and what 'done' looks like.",
+        "Add one or two examples of a great result. Examples beat adjectives."
+      ],
+      "tip": "If a new teammate couldn't follow your instructions, an agent can't either.",
+      "diagram": {
+        "type": "stack",
+        "layers": [["🎯", "Goal"], ["📏", "Rules"], ["✅", "What 'done' looks like"], ["📎", "Examples"]],
+        "target": ["🤖", "Agent"]
+      },
+      "quiz": {
+        "q": "Which instruction is best?",
+        "options": ["Be smart and helpful", "Do the email stuff", "Sort emails into 3 labels. Never delete."],
+        "answer": 2,
+        "why": "It has a clear goal and a clear rule."
+      }
+    },
+    {
+      "id": "small",
+      "chip": "🌱 Start small",
+      "fish": "tang",
+      "tint": null,
+      "name": "Dory the Tang",
+      "title": "Start small, then grow",
+      "bullets": [
+        "Pick ONE boring, repeatable job. Small jobs actually work.",
+        "Test it 10 times, fix what breaks, then add more."
+      ],
+      "tip": "Great first jobs: summarize a daily report, sort your inbox, draft replies for review.",
+      "diagram": {
+        "type": "flow",
+        "nodes": [["1️⃣", "One job"], ["🧪", "Test 10×"], ["🧰", "Add a tool"], ["📈", "Grow"]]
+      },
+      "quiz": {
+        "q": "What is the best first agent job?",
+        "options": ["Run my whole company", "One small repeatable task", "Anything, no plan"],
+        "answer": 1,
+        "why": "Small, repeatable jobs are easy to test and trust."
+      }
+    },
+    {
+      "id": "guardrails",
+      "chip": "🛡️ Guardrails",
+      "fish": "angel",
+      "tint": 16744112,
+      "name": "Bubbles the Pink Angelfish",
+      "title": "Keep a human in the loop",
+      "bullets": [
+        "Let it draft, you approve. Always for sending, spending or deleting.",
+        "Keep a log of what it did, so you can check and undo."
+      ],
+      "tip": "Earn trust in steps: approve everything first, then auto-run only the low-risk parts.",
+      "diagram": {
+        "type": "flow",
+        "nodes": [["📝", "Plan"], ["🙋", "You approve"], ["⚡", "Act"], ["📜", "Log"]],
+        "highlight": 1
+      },
+      "quiz": {
+        "q": "When can an agent act without approval?",
+        "options": ["Always, for speed", "After it proved reliable on low-risk steps", "Never use agents"],
+        "answer": 1,
+        "why": "Trust is earned with low-risk steps first."
+      }
     }
   ]
 }

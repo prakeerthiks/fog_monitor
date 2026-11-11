@@ -13,6 +13,19 @@ export function voxMat(color) {
   return m;
 }
 
+// Drop voxels that are completely surrounded (never visible) to keep rendering light.
+export function cullBuried(list) {
+  const set = new Set(list.map((v) => `${v.x},${v.y},${v.z}`));
+  return list.filter(
+    (v) =>
+      !(
+        set.has(`${v.x + 1},${v.y},${v.z}`) && set.has(`${v.x - 1},${v.y},${v.z}`) &&
+        set.has(`${v.x},${v.y + 1},${v.z}`) && set.has(`${v.x},${v.y - 1},${v.z}`) &&
+        set.has(`${v.x},${v.y},${v.z + 1}`) && set.has(`${v.x},${v.y},${v.z - 1}`)
+      )
+  );
+}
+
 // Turn a list of {x,y,z,c} voxels into ONE instanced mesh (fast, even with thousands of voxels).
 export function voxelMesh(vox, size) {
   const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(size * 0.97, size * 0.97, size * 0.97), lambert, vox.length);
@@ -32,6 +45,19 @@ export function voxelMesh(vox, size) {
 // Side profiles (head faces RIGHT). Uppercase = chubby body, lowercase = thin fin,
 // E = big sparkly eye, P = rosy blush cheek. Profiles are doubled in resolution when built.
 const SPECIES = {
+  tang: {
+    maxHalf: 2,
+    rows: [
+      '...ffffff.....',
+      '..TTTTTTTTTT..',
+      'fTTTTKKKTTTTTT',
+      'ffTTTKKKTTTTET',
+      'fTTTTKKKTTTTPT',
+      '..TTTTTTTTTT..',
+      '...fffff......'
+    ],
+    colors: { T: 0x4aa3ff, K: 0x24265c, f: 0xffe14d, E: 0x4aa3ff, P: 0x4aa3ff }
+  },
   clown: {
     maxHalf: 3,
     rows: [
@@ -99,7 +125,7 @@ export function buildFish(kind, tint = null, targetSize = 1.9) {
   const tintHex = tint !== null ? tint : null;
   const colorOf = (ch) => {
     const hex = sp.colors[ch];
-    if (tintHex !== null && 'OYBEP'.includes(ch)) return tintHex;
+    if (tintHex !== null && 'OYBEPT'.includes(ch)) return tintHex;
     return hex;
   };
 
@@ -168,19 +194,20 @@ export function buildFish(kind, tint = null, targetSize = 1.9) {
   // same relative size for every fish: scale by sqrt(width*height)
   const norm = targetSize / (Math.sqrt(w * h) * VS);
   root.scale.setScalar(norm);
-  root.userData = { body, mouth, width: w * VS * norm, height: h * VS * norm };
+  root.userData = { body, mouth, width: w * VS * norm, height: h * VS * norm, baseScale: norm };
   return root;
 }
 
 // ---- Teacher fish: swims in one plane, comes to a front plane, dives into its cave ----
 export const FRONT_POS = new THREE.Vector3(0, 1.5, 5.5);
 const SWIM_Z = 2.5;
-const SWIM_Y = 3.7;
+const SWIM_Y = 3.2;
 
 export class TeacherFish {
-  constructor(kind, home, targetSize = 1.9) {
+  constructor(kind, home, tint = null, targetSize = 1.5) {
     this.kind = kind;
-    this.obj = buildFish(kind, null, targetSize);
+    this.obj = buildFish(kind, tint, targetSize);
+    this.sc = 1;
     this.home = home; // {x, entrance, inside}
     this.state = 'swim'; // 'swim' | 'front' | 'home'
     this.path = [];
@@ -208,7 +235,7 @@ export class TeacherFish {
     let target;
     let maxSpeed = 5;
     if (this.state === 'swim') {
-      target = new THREE.Vector3(this.home.x + Math.sin(t * 0.45 + this.phase) * 2.6, SWIM_Y + Math.sin(t * 0.9 + this.phase) * 0.3, SWIM_Z);
+      target = new THREE.Vector3(this.home.x + Math.sin(t * 0.45 + this.phase) * 2.0, SWIM_Y + Math.sin(t * 0.9 + this.phase) * 0.3, SWIM_Z);
       maxSpeed = 3;
     } else {
       target = this.path[0] || (this.state === 'front' ? FRONT_POS : this.home.inside);
@@ -237,6 +264,10 @@ export class TeacherFish {
     this.heading = lerpAngle(this.heading, targetHeading, 1 - Math.exp(-dt * 5));
     this.obj.rotation.y = this.heading;
     this.obj.position.y += bob * dt * 10;
+
+    // grow a little when it comes to the front, shrink back when it leaves
+    this.sc += ((this.state === 'front' ? 1.4 : 1) - this.sc) * (1 - Math.exp(-dt * 2.5));
+    this.obj.scale.setScalar(this.obj.userData.baseScale * this.sc);
 
     // tail wiggle + talking chatter
     const speed = this.vel.length();

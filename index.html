@@ -31,7 +31,7 @@
     #hint { position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; color: #fff; font-weight: 700; font-size: 15px; text-shadow: 0 2px 0 #0b4a7a99; z-index: 4; pointer-events: none; transition: opacity .5s; }
 
     /* scroll */
-    #scroll { position: fixed; z-index: 6; right: 4vw; top: 50%; width: min(430px, 90vw); transform: translateY(-50%); pointer-events: none; }
+    #scroll { position: fixed; z-index: 6; right: 3vw; top: 52%; width: min(460px, 92vw); transform: translateY(-50%); pointer-events: none; }
     #scroll .rod { height: 20px; border-radius: 10px; background: linear-gradient(#d9954f, var(--wood) 55%, var(--wood-dark)); box-shadow: 0 5px 0 #0003; position: relative; z-index: 2; opacity: 0; transform: scaleX(.85); transition: opacity .5s .1s, transform .6s .1s; }
     #scroll .rod::before, #scroll .rod::after { content: ''; position: absolute; top: -4px; width: 16px; height: 28px; border-radius: 6px; background: var(--wood-dark); }
     #scroll .rod::before { left: -8px; } #scroll .rod::after { right: -8px; }
@@ -43,7 +43,7 @@
     #scroll.open .sheet { grid-template-rows: 1fr; }
     #who { font-weight: 800; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: #c2571a; }
     #ltitle { font-weight: 800; font-size: 26px; line-height: 1.1; margin: 4px 0 10px; }
-    #ltext { font-weight: 500; font-size: 18px; line-height: 1.35; min-height: 11em; white-space: pre-line; }
+    #ltext { font-weight: 500; font-size: 18px; line-height: 1.35; white-space: pre-line; }
     #ltext .hide { opacity: 0; }
     #nav { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 8px; }
     .dots { display: flex; gap: 7px; }
@@ -54,6 +54,25 @@
     .nbtn:disabled { opacity: .35; cursor: default; }
     #ltitle, #ltext { transition: opacity .25s; }
     .swap #ltitle, .swap #ltext { opacity: 0; }
+
+
+    #diagram { margin: 2px 0 8px; background: #fff8e6; border-radius: 14px; box-shadow: inset 0 0 0 3px #f0d9a0; padding: 6px 4px; }
+    #diagram svg { width: 100%; height: auto; display: block; font-family: 'Baloo 2', sans-serif; }
+    .dg-node { opacity: 0; animation: dgpop .55s cubic-bezier(.3,1.5,.5,1) forwards; }
+    .dg-line { opacity: 0; animation: dgfade .5s forwards; }
+    @keyframes dgpop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+    @keyframes dgfade { to { opacity: 1; } }
+    #ltext { min-height: 7.2em; }
+    .btns { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+    #qtext { font-weight: 800; font-size: 21px; line-height: 1.2; margin: 6px 0 12px; }
+    .opt { display: block; width: 100%; text-align: left; font: 700 18px/1.2 'Baloo 2', sans-serif; color: var(--ink); background: #fff; border: 3px solid #e6c987; border-radius: 14px; padding: 12px 14px; margin-bottom: 9px; cursor: pointer; transition: transform .15s, background .2s, border-color .2s; }
+    .opt b { display: inline-block; width: 26px; height: 26px; line-height: 26px; text-align: center; border-radius: 8px; background: #ffd23f; margin-right: 10px; }
+    .opt.hover { transform: scale(1.03); border-color: #ff8a1f; background: #fff3d6; }
+    .opt.good { background: #c8f7c5; border-color: #2fbf4a; }
+    .opt.bad { background: #ffd2d2; border-color: #e24a4a; animation: shake .4s; }
+    @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+    #qfeed { font-weight: 700; font-size: 16px; min-height: 2.6em; margin-top: 2px; color: #7d4a1f; }
+    [hidden] { display: none !important; }
 
     /* hands */
     #cam { position: fixed; left: 14px; bottom: 14px; width: 150px; border-radius: 14px; border: 3px solid #fff; transform: scaleX(-1); z-index: 5; display: none; background: #0b4a7a; opacity: .9; }
@@ -83,7 +102,7 @@
   <canvas id="gl"></canvas>
 
   <div id="bar"></div>
-  <div id="hint">Pick a topic or tap a fish · Esc to send the fish home<br>🖐 Hands: point &amp; hold on a fish · open palm to finish</div>
+  <div id="hint">Pick a fish to learn about AI agents · Esc sends the fish home<br>🖐 Hands: point &amp; hold on a fish · ✌️ two fingers = quiz · open hand = done</div>
 
   <div id="scroll" aria-live="polite">
     <div class="rod"></div>
@@ -91,8 +110,19 @@
       <div class="paper">
         <div id="who"></div>
         <div id="ltitle"></div>
-        <div id="ltext"></div>
-        <div style="text-align:center;margin-top:10px"><button class="nbtn ghost" id="done">Done · send fish home</button></div>
+        <div id="lesson">
+          <div id="diagram"></div>
+          <div id="ltext"></div>
+        </div>
+        <div id="quiz" hidden>
+          <div id="qtext"></div>
+          <div id="opts"></div>
+          <div id="qfeed"></div>
+        </div>
+        <div class="btns">
+          <button class="nbtn" id="quizbtn">✌️ Quiz me</button>
+          <button class="nbtn ghost" id="done">🖐 Done</button>
+        </div>
       </div>
     </div></div>
     <div class="rod"></div>

@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import topicsData from './data/topics.json';
-import { TeacherFish, AmbientFish, FRONT_POS, voxMat } from './fish.js';
+import { TeacherFish, AmbientFish, FRONT_POS } from './fish.js';
+import { renderDiagram } from './diagrams.js';
 import { buildWorld } from './world.js';
-import { initAudio, setMuted, isMuted, sfxBubble, sfxWhoosh, sfxChime, sfxBlip } from './audio.js';
+import { initAudio, setMuted, isMuted, sfxBubble, sfxWhoosh, sfxChime, sfxBlip, sfxCorrect, sfxWrong } from './audio.js';
 
 const topics = topicsData.topics;
 
@@ -23,16 +24,16 @@ const world = buildWorld(scene);
 
 // ---------- fish ----------
 const teachers = topics.map((tp, i) => {
-  const f = new TeacherFish(tp.fish, world.homes[i]);
+  const f = new TeacherFish(tp.fish, world.homes[i], tp.tint);
   f.topic = tp;
   scene.add(f.obj);
   return f;
 });
 const ambient = [];
-const kinds = ['clown', 'puffer', 'angel'];
+const kinds = ['clown', 'puffer', 'angel', 'tang'];
 const tints = [0xff5fa2, 0x2ee6c5, 0xffd23f, 0xb06bff, 0xff8a3d, 0x5ad1ff];
 for (let i = 0; i < 9; i++) {
-  const a = new AmbientFish(kinds[i % 3], tints[i % tints.length], { xMin: -15, xMax: 15, yMin: -1.2, yMax: 5.5, zMin: -9, zMax: 0.5 });
+  const a = new AmbientFish(kinds[i % 4], tints[i % tints.length], { xMin: -19, xMax: 19, yMin: -1.2, yMax: 5.5, zMin: -9, zMax: 0.5 });
   ambient.push(a);
   scene.add(a.obj);
 }
@@ -81,7 +82,7 @@ function cameraTargets(t) {
   const portrait = window.innerWidth / window.innerHeight < 1;
   // orbit the camera ~10 degrees around the fish when it is talking, for a dynamic feel
   const az = focus ? 10 * DEG + Math.sin(t * 0.35) * 1.5 * DEG : Math.sin(t * 0.12) * 3 * DEG + pointer.x * 4 * DEG;
-  const dist = focus ? (portrait ? 11 : 10.5) : portrait ? 30 : 21;
+  const dist = focus ? (portrait ? 13 : 12) : portrait ? 38 : 25;
   const height = focus ? 0.9 : 3.0;
   const center = focus ? FRONT_POS : new THREE.Vector3(0, -0.3, 0);
   const pos = new THREE.Vector3(center.x + Math.sin(az) * dist, center.y + height + pointer.y * 0.3, center.z + Math.cos(az) * dist);
@@ -89,7 +90,7 @@ function cameraTargets(t) {
   const look = center.clone();
   if (focus) {
     if (portrait) look.y -= 1.7; // fish sits in the upper half, scroll below
-    else look.addScaledVector(right, 2.6); // fish sits on the left, scroll on the right
+    else look.addScaledVector(right, 3.2); // fish sits on the left, scroll on the right
   }
   return { pos, look, fov: focus ? 36 : 46 };
 }
@@ -131,14 +132,22 @@ bar.appendChild(muteBtn);
 let typing = null; // { full, shown, acc }
 let openTimer = null;
 let blipAcc = 0;
+let view = 'lesson'; // 'lesson' | 'quiz'
+let answered = false;
 
-// ONE scroll per fish: title, a few bullet points, and a fish fact. It types itself out.
+// ONE scroll per fish: diagram + 2 short points + a tip. It types itself out.
 function renderScroll() {
   const tp = focus.topic;
+  view = 'lesson';
+  answered = false;
+  $('lesson').hidden = false;
+  $('quiz').hidden = true;
+  $('quizbtn').hidden = false;
   $('who').textContent = `${tp.name} says…`;
   $('ltitle').textContent = tp.title;
-  const full = tp.points.map((p) => `• ${p}`).join('\n') + `\n\n🐟 ${tp.fishFact}`;
-  typing = { full, shown: 0, acc: 0 };
+  $('diagram').innerHTML = renderDiagram(tp.diagram);
+  const full = tp.bullets.map((p) => `• ${p}`).join('\n') + `\n\n💡 Tip: ${tp.tip}`;
+  typing = { full, shown: 0, acc: -40, }; // small pause so the diagram pops in first
   setTyped(0);
 }
 function setTyped(n) {
@@ -151,6 +160,55 @@ function setTyped(n) {
   b.className = 'hide';
   b.textContent = full.slice(n);
   el.append(a, b);
+}
+
+function showQuiz() {
+  if (!focus || view === 'quiz' || !scrollEl.classList.contains('open')) return;
+  const q = focus.topic.quiz;
+  view = 'quiz';
+  answered = false;
+  typing = null;
+  focus.talking = false;
+  sfxChime();
+  $('lesson').hidden = true;
+  $('quiz').hidden = false;
+  $('quizbtn').hidden = true;
+  $('qtext').textContent = q.q;
+  $('qfeed').textContent = 'Point at an answer and hold ☝️';
+  const opts = $('opts');
+  opts.innerHTML = '';
+  q.options.forEach((o, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.dataset.i = i;
+    b.innerHTML = `<b>${'ABC'[i]}</b>${o}`;
+    b.onclick = () => answer(i);
+    opts.appendChild(b);
+  });
+}
+
+function answer(i) {
+  if (view !== 'quiz' || answered || !focus) return;
+  const q = focus.topic.quiz;
+  const btns = [...$('opts').children];
+  if (i === q.answer) {
+    answered = true;
+    btns[i].classList.add('good');
+    $('qfeed').textContent = `✅ Correct! ${q.why}`;
+    sfxCorrect();
+    for (let k = 0; k < 18; k++) setTimeout(() => focus && spawnTalkBubble(focus), k * 60); // happy bubbles
+    const who = focus;
+    setTimeout(() => {
+      if (focus === who) leave(); // passed: the fish heads home
+    }, 3200);
+  } else {
+    // wrong: the fish keeps swimming here, try again
+    btns[i].classList.remove('bad');
+    void btns[i].offsetWidth;
+    btns[i].classList.add('bad');
+    $('qfeed').textContent = '❌ Not quite. The fish is still here, try again!';
+    sfxWrong();
+  }
 }
 
 function selectTopic(id) {
@@ -193,9 +251,12 @@ function leave() {
   $('hint').style.opacity = 1;
 }
 
+$('quizbtn').onclick = showQuiz;
 $('done').onclick = leave;
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') leave();
+  else if (e.key === '2' || e.key === 'q') showQuiz();
+  else if (view === 'quiz' && ['1', '2', '3'].includes(e.key) && e.key !== '2') answer(Number(e.key) - 1);
 });
 
 window.addEventListener('pointermove', (e) => {
@@ -229,7 +290,8 @@ $('start').addEventListener('click', () => {
 // ---------- hand control (3 simple gestures) ----------
 // point + hold = talk to fish | open palm held = done
 const DWELL = 0.45;
-const PALM_HOLD = 0.6;
+const TWO_HOLD = 0.5;
+const PALM_HOLD = 0.15; // open hand = bye, almost instant
 const camVideo = $('cam');
 const cursorEl = $('cursor');
 const toastEl = $('toast');
@@ -237,6 +299,7 @@ let hands = null;
 let handsOn = false;
 let dwell = { id: null, t: 0 };
 let palmT = 0;
+let twoT = 0;
 
 function toast(msg, ms = 3500) {
   toastEl.textContent = msg;
@@ -321,15 +384,41 @@ function handleHand(dt, nowSec, injected) {
     }
     palmT = 0;
   } else {
-    // focused: open palm to finish
-    dwell = { id: null, t: 0 };
-    if (s.openPalm && s.still) palmT += dt;
-    else palmT = Math.max(0, palmT - dt * 2);
-    cursorEl.classList.add('palm');
-    cursorEl.style.setProperty('--p', Math.min(palmT / PALM_HOLD, 1));
+    // focused: open hand = bye, two fingers = quiz, point + hold = answer
+    palmT = s.openPalm ? palmT + dt : 0;
     if (palmT >= PALM_HOLD) {
       palmT = 0;
+      twoT = 0;
       leave();
+      return;
+    }
+    if (view === 'lesson') {
+      twoT = s.twoFingers ? twoT + dt : 0;
+      dwell = { id: null, t: 0 };
+      cursorEl.classList.remove('palm');
+      cursorEl.style.setProperty('--p', Math.min(twoT / TWO_HOLD, 1));
+      if (twoT >= TWO_HOLD) {
+        twoT = 0;
+        showQuiz();
+      }
+    } else {
+      twoT = 0;
+      const el = document.elementFromPoint(px, py);
+      const opt = el && el.closest && el.closest('.opt');
+      [...$('opts').children].forEach((o) => o.classList.remove('hover'));
+      let id = null;
+      if (opt && !answered) {
+        id = opt.dataset.i;
+        opt.classList.add('hover');
+      }
+      if (id !== null && id === dwell.id) dwell.t += dt;
+      else dwell = { id, t: 0 };
+      cursorEl.classList.remove('palm');
+      cursorEl.style.setProperty('--p', id !== null ? Math.min(dwell.t / DWELL, 1) : 0);
+      if (id !== null && dwell.t >= DWELL) {
+        dwell = { id: null, t: 0 };
+        answer(Number(id));
+      }
     }
   }
 }
@@ -360,14 +449,14 @@ function frame() {
     const arrived = focus.obj.position.distanceTo(FRONT_POS) < 0.5;
     if (arrived && typing.shown < typing.full.length) {
       typing.acc += dt * 48; // chars per second
-      const n = Math.min(typing.full.length, Math.floor(typing.acc));
+      const n = Math.max(0, Math.min(typing.full.length, Math.floor(typing.acc)));
       if (n !== typing.shown) {
         typing.shown = n;
         setTyped(n);
         blipAcc += 1;
-        if (blipAcc % 3 === 0) sfxBlip();
+        if (blipAcc % 5 === 0) sfxBlip();
       }
-      focus.talking = true;
+      focus.talking = typing.acc >= 0;
     } else {
       focus.talking = false;
     }
