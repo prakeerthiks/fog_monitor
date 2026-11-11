@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import topicsData from './data/topics.json';
 import { TeacherFish, AmbientFish, FRONT_POS, voxMat } from './fish.js';
 import { buildWorld } from './world.js';
-import { initAudio, setMuted, isMuted, sfxBubble, sfxWhoosh, sfxChime, sfxSwipe, sfxBlip } from './audio.js';
+import { initAudio, setMuted, isMuted, sfxBubble, sfxWhoosh, sfxChime, sfxBlip } from './audio.js';
 
 const topics = topicsData.topics;
 
@@ -32,7 +32,7 @@ const ambient = [];
 const kinds = ['clown', 'puffer', 'angel'];
 const tints = [0xff5fa2, 0x2ee6c5, 0xffd23f, 0xb06bff, 0xff8a3d, 0x5ad1ff];
 for (let i = 0; i < 9; i++) {
-  const a = new AmbientFish(kinds[i % 3], tints[i % tints.length], { xMin: -12, xMax: 12, yMin: -1.8, yMax: 4, zMin: -7, zMax: 1 });
+  const a = new AmbientFish(kinds[i % 3], tints[i % tints.length], { xMin: -15, xMax: 15, yMin: -1.2, yMax: 5.5, zMin: -9, zMax: 0.5 });
   ambient.push(a);
   scene.add(a.obj);
 }
@@ -70,26 +70,28 @@ function updateTalkBubbles(dt, t) {
 }
 
 // ---------- camera director ----------
-const camPos = new THREE.Vector3(0, 0.8, 13);
+const camPos = new THREE.Vector3(0, 3, 21);
 const camLook = new THREE.Vector3(0, -0.5, 0);
 let camFov = 46;
 const pointer = { x: 0, y: 0 };
 let focus = null; // TeacherFish | null
 
+const DEG = Math.PI / 180;
 function cameraTargets(t) {
   const portrait = window.innerWidth / window.innerHeight < 1;
+  // orbit the camera ~10 degrees around the fish when it is talking, for a dynamic feel
+  const az = focus ? 10 * DEG + Math.sin(t * 0.35) * 1.5 * DEG : Math.sin(t * 0.12) * 3 * DEG + pointer.x * 4 * DEG;
+  const dist = focus ? (portrait ? 11 : 10.5) : portrait ? 30 : 21;
+  const height = focus ? 0.9 : 3.0;
+  const center = focus ? FRONT_POS : new THREE.Vector3(0, -0.3, 0);
+  const pos = new THREE.Vector3(center.x + Math.sin(az) * dist, center.y + height + pointer.y * 0.3, center.z + Math.cos(az) * dist);
+  const right = new THREE.Vector3(Math.cos(az), 0, -Math.sin(az));
+  const look = center.clone();
   if (focus) {
-    const p = FRONT_POS;
-    const pos = portrait ? new THREE.Vector3(p.x, p.y + 0.8, p.z + 8.5) : new THREE.Vector3(p.x + 1.2, p.y + 0.7, p.z + 8.2);
-    const look = portrait ? new THREE.Vector3(p.x, p.y - 1.7, p.z) : new THREE.Vector3(p.x + 1.9, p.y + 0.1, p.z);
-    // gentle drift while zoomed in
-    pos.x += Math.sin(t * 0.35) * 0.18 + pointer.x * 0.25;
-    pos.y += Math.sin(t * 0.27) * 0.08 + pointer.y * 0.12;
-    return { pos, look, fov: 36 };
+    if (portrait) look.y -= 1.7; // fish sits in the upper half, scroll below
+    else look.addScaledVector(right, 2.6); // fish sits on the left, scroll on the right
   }
-  const pos = new THREE.Vector3(Math.sin(t * 0.12) * 0.9 + pointer.x * 1.2, 0.9 + pointer.y * 0.5, portrait ? 22 : 17);
-  const look = new THREE.Vector3(pointer.x * 0.5, -0.6, 0);
-  return { pos, look, fov: 46 };
+  return { pos, look, fov: focus ? 36 : 46 };
 }
 function updateCamera(dt, t) {
   const tg = cameraTargets(t);
@@ -126,20 +128,17 @@ muteBtn.onclick = () => {
 };
 bar.appendChild(muteBtn);
 
-let lessonIdx = 0;
 let typing = null; // { full, shown, acc }
 let openTimer = null;
 let blipAcc = 0;
 
-function renderLesson(initial = false) {
+// ONE scroll per fish: title, a few bullet points, and a fish fact. It types itself out.
+function renderScroll() {
   const tp = focus.topic;
-  const l = tp.lessons[lessonIdx];
   $('who').textContent = `${tp.name} says…`;
-  $('ltitle').textContent = l.title;
-  $('dots').innerHTML = tp.lessons.map((_, i) => `<span class="dot ${i === lessonIdx ? 'on' : ''}"></span>`).join('');
-  $('prev').disabled = lessonIdx === 0;
-  $('next').disabled = lessonIdx === tp.lessons.length - 1;
-  typing = { full: l.text, shown: 0, acc: 0 };
+  $('ltitle').textContent = tp.title;
+  const full = tp.points.map((p) => `• ${p}`).join('\n') + `\n\n🐟 ${tp.fishFact}`;
+  typing = { full, shown: 0, acc: 0 };
   setTyped(0);
 }
 function setTyped(n) {
@@ -169,14 +168,13 @@ function selectTopic(id) {
   sfxWhoosh();
   chips.forEach((c, i) => c.classList.toggle('active', topics[i].id === id));
   $('hint').style.opacity = 0;
-  lessonIdx = 0;
   typing = null;
   openTimer = setTimeout(() => {
     if (focus !== next) return;
     sfxChime();
     scrollEl.classList.add('open');
-    renderLesson(true);
-  }, 1500);
+    renderScroll();
+  }, 1400);
 }
 
 function closeScroll() {
@@ -195,41 +193,11 @@ function leave() {
   $('hint').style.opacity = 1;
 }
 
-function go(delta) {
-  if (!focus || !scrollEl.classList.contains('open')) return;
-  const n = lessonIdx + delta;
-  if (n < 0 || n >= focus.topic.lessons.length) return;
-  sfxSwipe();
-  scrollEl.classList.add('swap');
-  typing = null;
-  setTimeout(() => {
-    lessonIdx = n;
-    renderLesson();
-    scrollEl.classList.remove('swap');
-  }, 220);
-}
-
-$('prev').onclick = () => go(-1);
-$('next').onclick = () => go(1);
 $('done').onclick = leave;
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowRight') go(1);
-  else if (e.key === 'ArrowLeft') go(-1);
-  else if (e.key === 'Escape') leave();
+  if (e.key === 'Escape') leave();
 });
 
-// swipe anywhere (when focused)
-let swipe = null;
-window.addEventListener('pointerdown', (e) => {
-  swipe = { x: e.clientX, y: e.clientY };
-});
-window.addEventListener('pointerup', (e) => {
-  if (!swipe) return;
-  const dx = e.clientX - swipe.x;
-  const dy = e.clientY - swipe.y;
-  swipe = null;
-  if (focus && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1);
-});
 window.addEventListener('pointermove', (e) => {
   pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -((e.clientY / window.innerHeight) * 2 - 1);
@@ -259,9 +227,9 @@ $('start').addEventListener('click', () => {
 });
 
 // ---------- hand control (3 simple gestures) ----------
-// point + hold = talk to fish | swipe hand = next/prev | open palm held = done
-const DWELL = 0.8;
-const PALM_HOLD = 1.0;
+// point + hold = talk to fish | open palm held = done
+const DWELL = 0.45;
+const PALM_HOLD = 0.6;
 const camVideo = $('cam');
 const cursorEl = $('cursor');
 const toastEl = $('toast');
@@ -353,9 +321,8 @@ function handleHand(dt, nowSec, injected) {
     }
     palmT = 0;
   } else {
-    // focused: swipe for lessons, open palm to finish
+    // focused: open palm to finish
     dwell = { id: null, t: 0 };
-    if (s.swipe) go(s.swipe === 'left' ? 1 : -1);
     if (s.openPalm && s.still) palmT += dt;
     else palmT = Math.max(0, palmT - dt * 2);
     cursorEl.classList.add('palm');
@@ -392,7 +359,7 @@ function frame() {
   if (typing && focus && scrollEl.classList.contains('open')) {
     const arrived = focus.obj.position.distanceTo(FRONT_POS) < 0.5;
     if (arrived && typing.shown < typing.full.length) {
-      typing.acc += dt * 34; // chars per second
+      typing.acc += dt * 48; // chars per second
       const n = Math.min(typing.full.length, Math.floor(typing.acc));
       if (n !== typing.shown) {
         typing.shown = n;
@@ -429,7 +396,7 @@ function frame() {
 frame();
 
 // handy for testing in the console
-window.__aq = { selectTopic, leave, go, teachers, fakeHand: (s, secs = 1) => {
+window.__aq = { selectTopic, leave, teachers, fakeHand: (s, secs = 1) => {
   // test helper: feed a synthetic hand state for `secs` seconds
   const end = performance.now() + secs * 1000;
   const iv = setInterval(() => {

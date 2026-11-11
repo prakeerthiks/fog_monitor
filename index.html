@@ -43,7 +43,7 @@
     #scroll.open .sheet { grid-template-rows: 1fr; }
     #who { font-weight: 800; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: #c2571a; }
     #ltitle { font-weight: 800; font-size: 26px; line-height: 1.1; margin: 4px 0 10px; }
-    #ltext { font-weight: 500; font-size: 20px; line-height: 1.35; min-height: 8.2em; }
+    #ltext { font-weight: 500; font-size: 18px; line-height: 1.35; min-height: 11em; white-space: pre-line; }
     #ltext .hide { opacity: 0; }
     #nav { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; gap: 8px; }
     .dots { display: flex; gap: 7px; }
@@ -83,7 +83,7 @@
   <canvas id="gl"></canvas>
 
   <div id="bar"></div>
-  <div id="hint">Pick a topic or tap a fish · swipe ← → for lessons · Esc to let the fish go home<br>🖐 Hands: point &amp; hold on a fish · swipe your hand · open palm to finish</div>
+  <div id="hint">Pick a topic or tap a fish · Esc to send the fish home<br>🖐 Hands: point &amp; hold on a fish · open palm to finish</div>
 
   <div id="scroll" aria-live="polite">
     <div class="rod"></div>
@@ -92,11 +92,6 @@
         <div id="who"></div>
         <div id="ltitle"></div>
         <div id="ltext"></div>
-        <div id="nav">
-          <button class="nbtn ghost" id="prev">←</button>
-          <div class="dots" id="dots"></div>
-          <button class="nbtn" id="next">→</button>
-        </div>
         <div style="text-align:center;margin-top:10px"><button class="nbtn ghost" id="done">Done · send fish home</button></div>
       </div>
     </div></div>

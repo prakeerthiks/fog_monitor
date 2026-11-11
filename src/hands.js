@@ -6,9 +6,7 @@ const MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/h
 // Tunable thresholds in one place
 export const CFG = {
   smooth: 0.35, // cursor smoothing (higher = snappier)
-  swipeDist: 0.22, // fraction of frame width the wrist must travel
   swipeWindow: 0.45, // seconds
-  swipeCooldown: 0.9,
   stillSpeed: 0.05 // max wrist travel (frame fraction) in the window to count as "still"
 };
 
@@ -60,7 +58,6 @@ export class Hands {
   // call once per frame; returns the current simple state
   poll(nowSec) {
     const s = this.state;
-    s.swipe = null;
     if (!this.running || !this.landmarker || this.video.readyState < 2) return s;
     if (this.video.currentTime === this.lastVideoTime) return s;
     this.lastVideoTime = this.video.currentTime;
@@ -106,16 +103,6 @@ export class Hands {
     const dx = wx - first.x;
     const dy = wy - first.y;
     s.still = Math.hypot(dx, dy) < CFG.stillSpeed;
-    if (
-      nowSec - this.lastSwipe > CFG.swipeCooldown &&
-      this.samples.length > 3 &&
-      Math.abs(dx) > CFG.swipeDist &&
-      Math.abs(dx) > Math.abs(dy) * 1.6
-    ) {
-      s.swipe = dx < 0 ? 'left' : 'right'; // direction as the user sees it on screen
-      this.lastSwipe = nowSec;
-      this.samples.length = 0;
-    }
     return s;
   }
 }

@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
-const VS = 0.2; // voxel size
-const boxGeo = new THREE.BoxGeometry(VS * 0.96, VS * 0.96, VS * 0.96);
+export const VS = 0.1; // voxel size (smaller = more detail)
+const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+const lambert = new THREE.MeshLambertMaterial({ color: 0xffffff });
 const matCache = new Map();
 export function voxMat(color) {
   let m = matCache.get(color);
@@ -11,165 +12,242 @@ export function voxMat(color) {
   }
   return m;
 }
-export { boxGeo, VS };
 
-// Side profiles, head faces RIGHT (+x). Uppercase = chunky body, lowercase = thin fin, E = eye.
+// Turn a list of {x,y,z,c} voxels into ONE instanced mesh (fast, even with thousands of voxels).
+export function voxelMesh(vox, size) {
+  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(size * 0.97, size * 0.97, size * 0.97), lambert, vox.length);
+  const d = new THREE.Object3D();
+  const col = new THREE.Color();
+  vox.forEach((v, i) => {
+    d.position.set(v.x * size, v.y * size, v.z * size);
+    d.updateMatrix();
+    mesh.setMatrixAt(i, d.matrix);
+    mesh.setColorAt(i, col.set(v.c));
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  return mesh;
+}
+
+// Side profiles (head faces RIGHT). Uppercase = chubby body, lowercase = thin fin,
+// E = big sparkly eye, P = rosy blush cheek. Profiles are doubled in resolution when built.
 const SPECIES = {
   clown: {
-    depth: 3,
+    maxHalf: 3,
     rows: [
       '....ffff.....',
       '..OOOWOOOWOO.',
       'fOOOOWOOOWOOO',
       'ffOOOWOOOWOEO',
-      'fOOOOWOOOWOOO',
+      'fOOOOWOOOWOPO',
       '..OOOWOOOWOO.',
       '....ff.ff....'
     ],
-    colors: { O: 0xff8a1f, W: 0xffffff, f: 0xff5a3c, E: 0xff8a1f }
+    colors: { O: 0xff9a3c, W: 0xffffff, f: 0xff6b6b, E: 0xff9a3c, P: 0xff9a3c }
   },
   puffer: {
-    depth: 5,
+    maxHalf: 4,
     rows: [
       '...YYYYYY...',
       '..YYYYYYYYY.',
       'fYYYYYYYYEYY',
-      'fYYYYYYYYYYY',
+      'fYYYYYYYYPYY',
       '..CCCCCCCCC.',
       '...CCCCCC...'
     ],
-    colors: { Y: 0xffd23f, C: 0xfff1c9, f: 0xff9f1c, E: 0xffd23f }
+    colors: { Y: 0xffd84d, C: 0xfff4d1, f: 0xffa94d, E: 0xffd84d, P: 0xffd84d }
   },
   angel: {
-    depth: 3,
+    maxHalf: 2,
     rows: [
       '....f......',
       '...fBB.....',
       '..BBByBB...',
       '.BBBByBBBB.',
       'fBBByBBBEBB',
-      '.BBBByBBBB.',
+      '.BBBByBBPB.',
       '..BBByBB...',
       '...fBB.....',
       '....f......'
     ],
-    colors: { B: 0x3ea6ff, y: 0xffe14d, f: 0xb06bff, E: 0x3ea6ff }
+    colors: { B: 0x4fb4ff, y: 0xffe86b, f: 0xc08bff, E: 0x4fb4ff, P: 0x4fb4ff }
   }
 };
 
-export function buildFish(kind, tint = null, scale = 1) {
+const EYE_WHITE = 0xffffff;
+const EYE_DARK = 0x1d1b3a;
+const BLUSH = 0xff7fb0;
+
+export function buildFish(kind, tint = null, targetSize = 1.9) {
   const sp = SPECIES[kind];
+  // 1) double the resolution so voxels are smaller
+  const S = 2;
+  const grid = [];
+  sp.rows.forEach((row) => {
+    const big = [];
+    for (let k = 0; k < S; k++) {
+      let line = '';
+      for (const ch of row) line += ch.repeat(S);
+      big.push(line);
+    }
+    big.forEach((l) => grid.push(l.split('')));
+  });
+  const h = grid.length;
+  const w = Math.max(...grid.map((r) => r.length));
+  const at = (r, c) => (r < 0 || r >= h || c < 0 || c >= grid[r].length ? '.' : grid[r][c]);
+
+  const tintHex = tint !== null ? tint : null;
+  const colorOf = (ch) => {
+    const hex = sp.colors[ch];
+    if (tintHex !== null && 'OYBEP'.includes(ch)) return tintHex;
+    return hex;
+  };
+
+  // 2) chubby rounded body: thickness depends on distance from the silhouette edge
+  const vox = new Map();
+  const put = (x, y, z, c) => vox.set(`${x},${y},${z}`, c);
+  for (let r = 0; r < h; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const ch = grid[r][c];
+      if (ch === '.') continue;
+      const isFin = ch >= 'a' && ch <= 'z';
+      let k = 1;
+      for (; k < 6; k++) {
+        let empty = false;
+        for (let dr = -k; dr <= k && !empty; dr++)
+          for (let dc = -k; dc <= k; dc++) {
+            if (Math.max(Math.abs(dr), Math.abs(dc)) !== k) continue;
+            if (at(r + dr, c + dc) === '.') {
+              empty = true;
+              break;
+            }
+          }
+        if (empty) break;
+      }
+      const hz = isFin ? 0 : Math.min(sp.maxHalf, k - 1);
+      const x = c - w / 2;
+      const y = h / 2 - r;
+      const base = colorOf(ch);
+      for (let z = -hz; z <= hz; z++) {
+        let col = base;
+        const outer = Math.abs(z) === hz && !isFin;
+        if (outer && ch === 'E') {
+          // 2x2 sparkly eye: one white highlight, rest dark
+          col = r % 2 === 0 && c % 2 === 0 ? EYE_WHITE : EYE_DARK;
+        } else if (outer && ch === 'P') {
+          col = BLUSH;
+        } else if (!isFin && z === hz - 0 && hz > 0 && (ch === 'O' || ch === 'Y' || ch === 'B')) {
+          // slightly lighter skin on the very top layers = soft shading
+          col = base;
+        }
+        put(x, y, z, col);
+      }
+    }
+  }
+
+  // 3) skip fully buried voxels (they are never seen)
+  const list = [];
+  vox.forEach((c, key) => {
+    const [x, y, z] = key.split(',').map(Number);
+    const buried =
+      vox.has(`${x + 1},${y},${z}`) && vox.has(`${x - 1},${y},${z}`) &&
+      vox.has(`${x},${y + 1},${z}`) && vox.has(`${x},${y - 1},${z}`) &&
+      vox.has(`${x},${y},${z + 1}`) && vox.has(`${x},${y},${z - 1}`);
+    if (!buried) list.push({ x, y, z, c });
+  });
+
   const root = new THREE.Group();
   const body = new THREE.Group();
   root.add(body);
-  const h = sp.rows.length;
-  const w = Math.max(...sp.rows.map((r) => r.length));
-  const tintCol = tint !== null ? new THREE.Color(tint) : null;
+  body.add(voxelMesh(list, VS));
 
-  sp.rows.forEach((row, r) => {
-    for (let c = 0; c < row.length; c++) {
-      const ch = row[c];
-      if (ch === '.') continue;
-      const isFin = ch >= 'a' && ch <= 'z';
-      const isEye = ch === 'E';
-      let hex = sp.colors[ch];
-      let col = new THREE.Color(hex);
-      if (tintCol && (ch === 'O' || ch === 'Y' || ch === 'B' || ch === 'E')) col = tintCol.clone();
-      const mat = voxMat(col.getHex());
-      const layers = isFin ? [0] : range(sp.depth);
-      layers.forEach((z) => {
-        const edge = !isFin && Math.abs(z) === (sp.depth - 1) / 2;
-        const m = new THREE.Mesh(boxGeo, isEye && edge ? voxMat(0x101820) : mat);
-        m.position.set((c - w / 2) * VS, (h / 2 - r) * VS, z * VS);
-        body.add(m);
-      });
-    }
-  });
-
-  // mouth anchor (where speech bubbles come out)
   const mouth = new THREE.Object3D();
-  mouth.position.set((w / 2 + 0.4) * VS, -0.2 * VS, 0);
+  mouth.position.set((w / 2 + 0.5) * VS, -0.3 * VS, 0);
   body.add(mouth);
-  root.userData = { body, mouth, length: w * VS };
-  root.scale.setScalar(scale);
+
+  // same relative size for every fish: scale by sqrt(width*height)
+  const norm = targetSize / (Math.sqrt(w * h) * VS);
+  root.scale.setScalar(norm);
+  root.userData = { body, mouth, width: w * VS * norm, height: h * VS * norm };
   return root;
 }
 
-function range(n) {
-  const a = [];
-  for (let i = 0; i < n; i++) a.push(i - (n - 1) / 2);
-  return a;
-}
+// ---- Teacher fish: swims in one plane, comes to a front plane, dives into its cave ----
+export const FRONT_POS = new THREE.Vector3(0, 1.5, 5.5);
+const SWIM_Z = 2.5;
+const SWIM_Y = 3.7;
 
-const FRONT = new THREE.Vector3(0, -0.2, 5.5);
-
-// A teacher fish: lives at `home`, swims to the front when selected.
 export class TeacherFish {
-  constructor(kind, home, scale = 1.2) {
+  constructor(kind, home, targetSize = 1.9) {
     this.kind = kind;
-    this.obj = buildFish(kind, null, scale);
-    this.home = home.clone();
-    this.state = 'home'; // 'home' | 'front'
+    this.obj = buildFish(kind, null, targetSize);
+    this.home = home; // {x, entrance, inside}
+    this.state = 'swim'; // 'swim' | 'front' | 'home'
+    this.path = [];
     this.talking = false;
     this.heading = 0;
-    this.obj.position.copy(this.home);
-    this.obj.rotation.y = 0;
+    this.faceLeft = false;
     this.phase = Math.random() * 10;
     this.vel = new THREE.Vector3();
+    this.obj.position.set(home.x, SWIM_Y, SWIM_Z);
     this.obj.traverse((o) => (o.userData.teacher = this));
   }
   goFront() {
     this.state = 'front';
+    this.talking = false;
+    const atHome = this.obj.position.z < 1.2 && this.obj.position.y < this.home.entrance.y + 0.8;
+    this.path = atHome ? [this.home.entrance.clone(), FRONT_POS.clone()] : [FRONT_POS.clone()];
   }
   goHome() {
     this.state = 'home';
     this.talking = false;
+    this.path = [this.home.entrance.clone(), this.home.inside.clone()];
   }
   update(dt, t) {
     const p = this.obj.position;
-    const prev = p.clone();
     let target;
-    let k;
-    if (this.state === 'front') {
-      target = FRONT.clone();
-      target.y += Math.sin(t * 1.4 + this.phase) * 0.06;
-      k = 1.9;
+    let maxSpeed = 5;
+    if (this.state === 'swim') {
+      target = new THREE.Vector3(this.home.x + Math.sin(t * 0.45 + this.phase) * 2.6, SWIM_Y + Math.sin(t * 0.9 + this.phase) * 0.3, SWIM_Z);
+      maxSpeed = 3;
     } else {
-      // tucked in near the cave, gentle hover
-      target = this.home.clone();
-      target.x += Math.sin(t * 0.6 + this.phase) * 0.5;
-      target.y += Math.sin(t * 1.1 + this.phase) * 0.12;
-      k = 1.6;
+      target = this.path[0] || (this.state === 'front' ? FRONT_POS : this.home.inside);
+      if (this.path.length > 1 && p.distanceTo(target) < 0.45) {
+        this.path.shift();
+        target = this.path[0];
+      }
     }
-    p.lerp(target, 1 - Math.exp(-dt * k));
-    this.vel.copy(p).sub(prev);
+    const dir = target.clone().sub(p);
+    const dist = dir.length();
+    const want = dist > 0.001 ? dir.normalize().multiplyScalar(Math.min(maxSpeed, dist * 2.0)) : new THREE.Vector3();
+    this.vel.lerp(want, 1 - Math.exp(-dt * 4));
+    p.addScaledVector(this.vel, dt);
 
-    // heading
-    let targetHeading;
-    if (this.state === 'front') {
-      targetHeading = this.vel.length() > 0.004 ? headingFromVel(this.vel) : -0.55;
-      if (p.distanceTo(FRONT) < 0.6) targetHeading = -0.55;
-    } else {
-      targetHeading = Math.cos(t * 0.6 + this.phase) >= 0 ? 0 : Math.PI;
-      if (this.vel.length() > 0.01) targetHeading = headingFromVel(this.vel);
-    }
-    this.heading = lerpAngle(this.heading, targetHeading, 1 - Math.exp(-dt * 3));
+    // gentle bob once settled
+    let bob = 0;
+    if (this.state === 'front') bob = Math.sin(t * 1.6 + this.phase) * 0.05;
+    if (this.state === 'home') bob = Math.sin(t * 1.2 + this.phase) * 0.04;
+
+    // heading: ALWAYS a clean side profile (never angled toward the camera)
+    if (this.state === 'front' && dist < 1.5) this.faceLeft = false;
+    else if (this.state === 'home' && this.path.length <= 1) this.faceLeft = false;
+    else if (this.vel.x < -0.25) this.faceLeft = true;
+    else if (this.vel.x > 0.25) this.faceLeft = false;
+    const targetHeading = this.faceLeft ? Math.PI : 0;
+    this.heading = lerpAngle(this.heading, targetHeading, 1 - Math.exp(-dt * 5));
     this.obj.rotation.y = this.heading;
+    this.obj.position.y += bob * dt * 10;
 
-    // tail wiggle / mouth chatter
-    const speed = this.vel.length() / Math.max(dt, 0.001);
-    const wig = 0.12 + Math.min(speed * 0.1, 0.25);
+    // tail wiggle + talking chatter
+    const speed = this.vel.length();
+    const wig = 0.07 + Math.min(speed * 0.04, 0.1);
     this.obj.userData.body.rotation.y = Math.sin(t * 7 + this.phase) * wig;
-    this.obj.userData.body.rotation.z = Math.sin(t * 2.2 + this.phase) * 0.04;
-    const talkPulse = this.talking ? 1 + Math.abs(Math.sin(t * 14)) * 0.05 : 1;
-    this.obj.userData.body.scale.setScalar(talkPulse);
+    this.obj.userData.body.rotation.z = Math.sin(t * 2.2 + this.phase) * 0.03;
+    const pulse = this.talking ? 1 + Math.abs(Math.sin(t * 14)) * 0.04 : 1;
+    this.obj.userData.body.scale.setScalar(pulse);
   }
 }
 
-function headingFromVel(v) {
-  // body faces +x; rotating by theta about y maps +x -> (cos, 0, -sin)
-  return Math.atan2(-v.z, v.x);
-}
 function lerpAngle(a, b, t) {
   let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI;
   if (d < -Math.PI) d += Math.PI * 2;
@@ -179,7 +257,7 @@ function lerpAngle(a, b, t) {
 // Small background swimmers for life
 export class AmbientFish {
   constructor(kind, color, bounds) {
-    this.obj = buildFish(kind, color, 0.55 + Math.random() * 0.35);
+    this.obj = buildFish(kind, color, 0.7 + Math.random() * 0.5);
     this.bounds = bounds;
     this.dir = Math.random() < 0.5 ? 1 : -1;
     this.speed = 0.5 + Math.random() * 0.9;
@@ -195,13 +273,11 @@ export class AmbientFish {
   update(dt, t) {
     const p = this.obj.position;
     p.x += this.dir * this.speed * dt;
-    p.y = this.baseY + Math.sin(t * 0.9 + this.phase) * 0.35;
+    p.y = this.baseY + Math.sin(t * 0.9 + this.phase) * 0.3;
     if (p.x > this.bounds.xMax) this.dir = -1;
     if (p.x < this.bounds.xMin) this.dir = 1;
     const target = this.dir > 0 ? 0 : Math.PI;
     this.obj.rotation.y = lerpAngle(this.obj.rotation.y, target, 1 - Math.exp(-dt * 2.5));
-    this.obj.userData.body.rotation.y = Math.sin(t * 8 + this.phase) * 0.18;
+    this.obj.userData.body.rotation.y = Math.sin(t * 8 + this.phase) * 0.12;
   }
 }
-
-export const FRONT_POS = FRONT;
