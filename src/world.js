@@ -41,7 +41,7 @@ export function buildWorld(scene) {
       const x = rnd(-21, 21);
       const z = rnd(-11, 3.5);
       const behind = z < -3.6;
-      const sides = Math.abs(x) > 17;
+      const sides = Math.abs(x) > 13;
       if (behind || sides) return [x, z];
     }
     return [rnd(-19, -15), -6];
@@ -96,16 +96,16 @@ export function buildWorld(scene) {
   }
 
   // ---- Homes: rounded voxel burrows on the sea bed ----
-  const CELL = 0.22;
+  const CELL = 0.17;
   const W = 26;
   const H = 15;
   const D = 6;
   const homeDefs = [
-    { x: -12.4, color: 0xddaf85, trim: 0xfcd9b8 },
-    { x: -6.2, color: 0xf7e05a, trim: 0xfff4b0 },
+    { x: -9.6, color: 0xddaf85, trim: 0xfcd9b8 },
+    { x: -4.8, color: 0xf7e05a, trim: 0xfff4b0 },
     { x: 0, color: 0xd2bbff, trim: 0xefd8f7 },
-    { x: 6.2, color: 0x00c49c, trim: 0xbff3e3 },
-    { x: 12.4, color: 0xfc85ff, trim: 0xffd0ff }
+    { x: 4.8, color: 0x00c49c, trim: 0xbff3e3 },
+    { x: 9.6, color: 0xfc85ff, trim: 0xffd0ff }
   ];
   const homes = homeDefs.map((hd) => {
     const vox = [];
@@ -146,8 +146,8 @@ export function buildWorld(scene) {
     const midZ = -2.2 - D * CELL * 0.5 + (D * CELL) / 2 - 0.2; // inside, just in front of back wall
     return {
       x: hd.x,
-      entrance: new THREE.Vector3(hd.x, FLOOR_Y + 1.0, 0.6),
-      inside: new THREE.Vector3(hd.x, FLOOR_Y + 1.0, midZ + 0.05)
+      entrance: new THREE.Vector3(hd.x, FLOOR_Y + 0.85, 0.6),
+      inside: new THREE.Vector3(hd.x, FLOOR_Y + 0.85, midZ + 0.05)
     };
   });
 

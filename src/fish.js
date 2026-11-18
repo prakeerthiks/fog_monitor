@@ -201,13 +201,14 @@ export function buildFish(kind, tint = null, targetSize = 1.9) {
 // ---- Teacher fish: swims in one plane, comes to a front plane, dives into its cave ----
 export const FRONT_POS = new THREE.Vector3(0, 1.5, 5.5);
 const SWIM_Z = 2.5;
-const SWIM_Y = 3.2;
+const SWIM_Y = [3.1, 1.7]; // two staggered heights so neighbours never overlap
 
 export class TeacherFish {
-  constructor(kind, home, tint = null, targetSize = 1.5) {
+  constructor(kind, home, tint = null, targetSize = 1.5, slot = 0) {
+    this.swimY = SWIM_Y[slot % 2];
     this.kind = kind;
     this.obj = buildFish(kind, tint, targetSize);
-    this.sc = 1;
+    this.sc = 1.35;
     this.home = home; // {x, entrance, inside}
     this.state = 'swim'; // 'swim' | 'front' | 'home'
     this.path = [];
@@ -216,7 +217,11 @@ export class TeacherFish {
     this.faceLeft = false;
     this.phase = Math.random() * 10;
     this.vel = new THREE.Vector3();
-    this.obj.position.set(home.x, SWIM_Y, SWIM_Z);
+    this.obj.position.set(home.x, this.swimY, SWIM_Z);
+    // big invisible hit sphere: much easier to point at
+    const hit = new THREE.Mesh(new THREE.SphereGeometry(1.4, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.userData.hit = true;
+    this.obj.add(hit);
     this.obj.traverse((o) => (o.userData.teacher = this));
   }
   goFront() {
@@ -235,7 +240,8 @@ export class TeacherFish {
     let target;
     let maxSpeed = 5;
     if (this.state === 'swim') {
-      target = new THREE.Vector3(this.home.x + Math.sin(t * 0.45 + this.phase) * 2.0, SWIM_Y + Math.sin(t * 0.9 + this.phase) * 0.3, SWIM_Z);
+      const k = document.body.classList.contains('reel') ? 0.5 : 0.8; // tighter row in reel mode
+      target = new THREE.Vector3(this.home.x * k + Math.sin(t * 0.45 + this.phase) * 0.5, this.swimY + Math.sin(t * 0.9 + this.phase) * 0.2, SWIM_Z);
       maxSpeed = 3;
     } else {
       target = this.path[0] || (this.state === 'front' ? FRONT_POS : this.home.inside);
@@ -266,7 +272,7 @@ export class TeacherFish {
     this.obj.position.y += bob * dt * 10;
 
     // grow a little when it comes to the front, shrink back when it leaves
-    this.sc += ((this.state === 'front' ? 1.4 : 1) - this.sc) * (1 - Math.exp(-dt * 2.5));
+    this.sc += ((this.state === 'front' ? 1.4 : this.state === 'swim' ? 1.35 : 1) - this.sc) * (1 - Math.exp(-dt * 2.5));
     this.obj.scale.setScalar(this.obj.userData.baseScale * this.sc);
 
     // tail wiggle + talking chatter

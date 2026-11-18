@@ -12,7 +12,7 @@ const canvas = document.getElementById('gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x0087fe, 16, 46);
+scene.fog = new THREE.Fog(0x0087fe, 30, 80); // clearer water
 const camera = new THREE.PerspectiveCamera(46, 1, 0.1, 100);
 
 scene.add(new THREE.HemisphereLight(0xfef8ec, 0x7caac9, 1.2));
@@ -24,7 +24,7 @@ const world = buildWorld(scene);
 
 // ---------- fish ----------
 const teachers = topics.map((tp, i) => {
-  const f = new TeacherFish(tp.fish, world.homes[i], tp.tint);
+  const f = new TeacherFish(tp.fish, world.homes[i], tp.tint, 1.5, i);
   f.topic = tp;
   scene.add(f.obj);
   return f;
@@ -84,9 +84,9 @@ function cameraTargets(t) {
   // orbit the camera ~10 degrees around the fish when it is talking, for a dynamic feel
   const az = focus ? 10 * DEG + Math.sin(t * 0.35) * 1.5 * DEG : Math.sin(t * 0.12) * 3 * DEG + pointer.x * 4 * DEG;
   const reel = isReel();
-  const dist = focus ? (reel ? 12.5 : portrait ? 13 : 12) : reel ? 34 : portrait ? 38 : 25;
-  const height = focus ? 0.9 : 3.0;
-  const center = focus ? FRONT_POS : new THREE.Vector3(0, -0.3, 0);
+  const dist = focus ? (reel ? 12.5 : portrait ? 13 : 12) : Math.max(12, (reel ? 14.5 : 19.5) / (0.849 * camera.aspect));
+  const height = focus ? 0.9 : 3.6;
+  const center = focus ? FRONT_POS : new THREE.Vector3(0, 1.1, 1.5);
   const pos = new THREE.Vector3(center.x + Math.sin(az) * dist, center.y + height + pointer.y * 0.3, center.z + Math.cos(az) * dist);
   const right = new THREE.Vector3(Math.cos(az), 0, -Math.sin(az));
   const look = center.clone();
@@ -279,7 +279,58 @@ function pickFish(e) {
   ndc.set(((e.clientX - rc.left) / rc.width) * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(teachers.map((t) => t.obj), true);
-  return hits.length ? hits[0].object.userData.teacher : null;
+  if (hits.length) return hits[0].object.userData.teacher;
+  // forgiving: snap to the nearest fish if the pointer is close to it on screen
+  let best = null;
+  let bestD = Math.max(70, rc.width * 0.12);
+  const v = new THREE.Vector3();
+  teachers.forEach((t) => {
+    v.copy(t.obj.position).project(camera);
+    const sx = rc.left + ((v.x + 1) / 2) * rc.width;
+    const sy = rc.top + ((1 - v.y) / 2) * rc.height;
+    const d = Math.hypot(sx - e.clientX, sy - e.clientY);
+    if (d < bestD) {
+      bestD = d;
+      best = t;
+    }
+  });
+  return best;
+}
+
+// floating name tags above each fish (big, clear things to point at)
+const tags = teachers.map((f) => {
+  const t = document.createElement('button');
+  t.className = 'chip fishtag';
+  t.dataset.id = f.topic.id;
+  const [em, ...rest] = f.topic.chip.split(' ');
+  t.innerHTML = '<span class="em"></span><span class="lb"></span>';
+  t.firstChild.textContent = em;
+  t.lastChild.textContent = ' ' + rest.join(' ');
+  t.onclick = () => selectTopic(f.topic.id);
+  $('stage').appendChild(t);
+  return t;
+});
+const _tv = new THREE.Vector3();
+function updateTags() {
+  const rc = canvas.getBoundingClientRect();
+  const st = $('stage').getBoundingClientRect();
+  teachers.forEach((f, i) => {
+    const t = tags[i];
+    if (focus) {
+      t.style.opacity = 0;
+      t.style.pointerEvents = 'none';
+      return;
+    }
+    _tv.copy(f.obj.position);
+    const below = i % 2 === 1; // lower-lane fish get their tag underneath so tags never cover fish
+    _tv.y += below ? -0.95 : 1.0;
+    _tv.project(camera);
+    const x = rc.left - st.left + ((_tv.x + 1) / 2) * rc.width;
+    const y = rc.top - st.top + ((1 - _tv.y) / 2) * rc.height;
+    t.style.opacity = f.state === 'home' ? 0.0 : 1;
+    t.style.pointerEvents = f.state === 'home' ? 'none' : 'auto';
+    t.style.transform = `translate(${x}px, ${y}px) translate(-50%, ${below ? '0%' : '-100%'})`;
+  });
 }
 canvas.addEventListener('click', (e) => {
   const f = pickFish(e);
@@ -379,13 +430,14 @@ function handleHand(dt, nowSec, injected) {
   cursorEl.style.display = 'block';
   cursorEl.style.transform = `translate(${px}px, ${py}px)`;
   chips.forEach((c) => c.classList.remove('hover'));
+  tags.forEach((c) => c.classList.remove('hover'));
 
   if (!focus) {
     // overview: dwell on a topic chip or a fish
     cursorEl.classList.remove('palm');
     let id = null;
     const el = document.elementFromPoint(px, py);
-    const chip = el && el.closest && el.closest('.chip[data-id]');
+    const chip = el && el.closest && el.closest('.chip[data-id], .fishtag');
     if (chip) {
       id = chip.dataset.id;
       chip.classList.add('hover');
@@ -516,6 +568,7 @@ function frame() {
 
   handleHand(dt, t);
   updateCamera(dt, t);
+  updateTags();
   renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
