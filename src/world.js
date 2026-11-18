@@ -4,8 +4,8 @@ import { voxelMesh, voxMat, cullBuried } from './fish.js';
 export const FLOOR_Y = -3;
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const CORAL_COLORS = [0xff7eb6, 0xffa24d, 0xffd84d, 0xc08bff, 0x3eead0, 0xff7a7a, 0x6fd6ff];
-const SAND = [0xffe8b8, 0xffdf9e, 0xfff3d0, 0xf9d9a0];
+const CORAL_COLORS = [0xfc85ff, 0xf7e05a, 0xd2bbff, 0x00c49c, 0xfcab82, 0xbfebf4, 0xefd8f7];
+const SAND = [0xfaf6e6, 0xf2e8c4, 0xfef8ec, 0xecdfb3];
 
 function tweak(hex, amt) {
   const c = new THREE.Color(hex);
@@ -79,7 +79,7 @@ export function buildWorld(scene) {
     const [x, z] = coralSpot();
     const g = new THREE.Group();
     const h = 7 + Math.floor(Math.random() * 9);
-    const col = pick([0x4be39a, 0x34d97c, 0x8bf079]);
+    const col = pick([0x007d2a, 0x00c49c, 0x2f9b4f]);
     for (let y = 0; y < h; y++) {
       const m = new THREE.Mesh(weedGeo, voxMat(tweak(col, y * 0.004)));
       m.position.y = y * 0.2 + 0.1;
@@ -101,11 +101,11 @@ export function buildWorld(scene) {
   const H = 15;
   const D = 6;
   const homeDefs = [
-    { x: -12.4, color: 0xffa24d, trim: 0xffdcb0 },
-    { x: -6.2, color: 0xffd84d, trim: 0xfff0a8 },
-    { x: 0, color: 0x4fb4ff, trim: 0xcdeaff },
-    { x: 6.2, color: 0x6c8cff, trim: 0xd3dcff },
-    { x: 12.4, color: 0xff7eb6, trim: 0xffd0e6 }
+    { x: -12.4, color: 0xddaf85, trim: 0xfcd9b8 },
+    { x: -6.2, color: 0xf7e05a, trim: 0xfff4b0 },
+    { x: 0, color: 0xd2bbff, trim: 0xefd8f7 },
+    { x: 6.2, color: 0x00c49c, trim: 0xbff3e3 },
+    { x: 12.4, color: 0xfc85ff, trim: 0xffd0ff }
   ];
   const homes = homeDefs.map((hd) => {
     const vox = [];
@@ -125,7 +125,7 @@ export function buildWorld(scene) {
           const inOpening = ix * ix + iy * iy < 1;
           if (inOpening && z > 0) continue;
           let c;
-          if (inOpening) c = 0x2a3a6b; // dark back wall
+          if (inOpening) c = 0x2e1b5b; // dark back wall (pixel-plum)
           else {
             const onRim = (ix * ix + iy * iy) < 1.25 && z >= D - 1;
             c = onRim ? hd.trim : tweak(hd.color, rnd(-0.05, 0.05));

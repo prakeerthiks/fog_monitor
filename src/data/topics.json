@@ -1,123 +1,144 @@
 {
   "topics": [
     {
-      "id": "what",
-      "chip": "🤖 What is it?",
+      "id": "meat",
+      "chip": "🦖 Meat-eaters",
       "fish": "clown",
       "tint": null,
-      "name": "Coral the Clownfish",
-      "title": "What is an AI agent?",
-      "bullets": [
-        "A chatbot answers once. An agent keeps working until the goal is done.",
-        "It runs a loop: think, use a tool, check the result, repeat."
-      ],
-      "tip": "Judge an agent by outcomes: did the job actually get done?",
-      "diagram": {
-        "type": "flow",
-        "nodes": [["🎯", "Goal"], ["🧠", "Think"], ["🛠️", "Act"], ["👀", "Check"]],
-        "loop": { "from": 3, "to": 1, "label": "repeat" }
-      },
-      "quiz": {
-        "q": "What makes an agent different from a chatbot?",
-        "options": ["It answers faster", "It uses tools in a loop until done", "It only works offline"],
-        "answer": 1,
-        "why": "Agents act, check the result and repeat. Chatbots just reply."
-      }
+      "name": "Coral",
+      "subject": "Meat-eaters",
+      "questions": [
+        {
+          "q": "Which dinosaur is the famous 'tyrant lizard king'?",
+          "options": ["Triceratops", "Tyrannosaurus rex", "Stegosaurus"],
+          "answer": 1,
+          "why": "T. rex means 'tyrant lizard king'!"
+        },
+        {
+          "q": "Velociraptor was about as big as a…",
+          "options": ["School bus", "Turkey (with feathers!)", "Elephant"],
+          "answer": 1,
+          "why": "Small, speedy and feathered. Much smaller than the movies show."
+        },
+        {
+          "q": "Most meat-eating dinosaurs walked on…",
+          "options": ["Two legs", "Four legs", "Fins"],
+          "answer": 0,
+          "why": "They ran on two strong back legs."
+        }
+      ]
     },
     {
-      "id": "tools",
-      "chip": "🧰 Tools",
+      "id": "longneck",
+      "chip": "🦕 Long-necks",
       "fish": "puffer",
       "tint": null,
-      "name": "Pico the Pufferfish",
-      "title": "Give it the right tools",
-      "bullets": [
-        "Tools let an agent do things: search, read files, send email, call an API.",
-        "Fewer tools means fewer mistakes. Give only what the job needs."
-      ],
-      "tip": "Start read-only. Add 'write' powers like sending or deleting only after it behaves.",
-      "diagram": {
-        "type": "hub",
-        "center": ["🤖", "Agent"],
-        "nodes": [["🔎", "Search"], ["📁", "Files"], ["✉️", "Email"], ["🔌", "API"]]
-      },
-      "quiz": {
-        "q": "How many tools should a new agent get?",
-        "options": ["Only what the job needs", "As many as possible", "None at all"],
-        "answer": 0,
-        "why": "Fewer tools means fewer ways for it to go wrong."
-      }
+      "name": "Pico",
+      "subject": "Long-necks",
+      "questions": [
+        {
+          "q": "Which dinosaur had a super long neck?",
+          "options": ["Triceratops", "Velociraptor", "Brachiosaurus"],
+          "answer": 2,
+          "why": "Brachiosaurus reached up high like a giraffe."
+        },
+        {
+          "q": "What did long-necked dinosaurs eat?",
+          "options": ["Plants", "Other dinosaurs", "Only fish"],
+          "answer": 0,
+          "why": "They were gentle plant-eaters."
+        },
+        {
+          "q": "Long-necks were among the ___ land animals ever.",
+          "options": ["Smallest", "Largest", "Quietest"],
+          "answer": 1,
+          "why": "Some were longer than three buses!"
+        }
+      ]
     },
     {
-      "id": "instructions",
-      "chip": "📝 Instructions",
+      "id": "horned",
+      "chip": "🦏 Horned",
       "fish": "angel",
       "tint": null,
-      "name": "Angel the Angelfish",
-      "title": "Write clear instructions",
-      "bullets": [
-        "Tell it the goal, the rules, and what 'done' looks like.",
-        "Add one or two examples of a great result. Examples beat adjectives."
-      ],
-      "tip": "If a new teammate couldn't follow your instructions, an agent can't either.",
-      "diagram": {
-        "type": "stack",
-        "layers": [["🎯", "Goal"], ["📏", "Rules"], ["✅", "What 'done' looks like"], ["📎", "Examples"]],
-        "target": ["🤖", "Agent"]
-      },
-      "quiz": {
-        "q": "Which instruction is best?",
-        "options": ["Be smart and helpful", "Do the email stuff", "Sort emails into 3 labels. Never delete."],
-        "answer": 2,
-        "why": "It has a clear goal and a clear rule."
-      }
+      "name": "Angel",
+      "subject": "Horned",
+      "questions": [
+        {
+          "q": "How many horns did Triceratops have?",
+          "options": ["Two", "Three", "Five"],
+          "answer": 1,
+          "why": "Two over the eyes and one on the nose. Tri-cera-tops!"
+        },
+        {
+          "q": "What is the big bony shield on its head called?",
+          "options": ["Frill", "Sail", "Shell"],
+          "answer": 0,
+          "why": "The frill helped protect its neck."
+        },
+        {
+          "q": "Triceratops lived during the…",
+          "options": ["Ice Age", "Cretaceous period", "Space Age"],
+          "answer": 1,
+          "why": "The Cretaceous, near the very end of the dinosaurs."
+        }
+      ]
     },
     {
-      "id": "small",
-      "chip": "🌱 Start small",
+      "id": "armored",
+      "chip": "🛡️ Armored",
       "fish": "tang",
       "tint": null,
-      "name": "Dory the Tang",
-      "title": "Start small, then grow",
-      "bullets": [
-        "Pick ONE boring, repeatable job. Small jobs actually work.",
-        "Test it 10 times, fix what breaks, then add more."
-      ],
-      "tip": "Great first jobs: summarize a daily report, sort your inbox, draft replies for review.",
-      "diagram": {
-        "type": "flow",
-        "nodes": [["1️⃣", "One job"], ["🧪", "Test 10×"], ["🧰", "Add a tool"], ["📈", "Grow"]]
-      },
-      "quiz": {
-        "q": "What is the best first agent job?",
-        "options": ["Run my whole company", "One small repeatable task", "Anything, no plan"],
-        "answer": 1,
-        "why": "Small, repeatable jobs are easy to test and trust."
-      }
+      "name": "Dory",
+      "subject": "Armored",
+      "questions": [
+        {
+          "q": "Which dinosaur had back plates and a spiky tail?",
+          "options": ["Stegosaurus", "T. rex", "Brachiosaurus"],
+          "answer": 0,
+          "why": "Stegosaurus: plates on its back, spikes on its tail."
+        },
+        {
+          "q": "Ankylosaurus had a tail like a…",
+          "options": ["Whip", "Club", "Fan"],
+          "answer": 1,
+          "why": "A heavy bony tail club!"
+        },
+        {
+          "q": "What are Stegosaurus tail spikes called?",
+          "options": ["Thagomizer", "Terabyte", "Triceratops"],
+          "answer": 0,
+          "why": "Thagomizer. Yes, that is a real word!"
+        }
+      ]
     },
     {
-      "id": "guardrails",
-      "chip": "🛡️ Guardrails",
+      "id": "sky",
+      "chip": "🦅 Sky & sea",
       "fish": "angel",
       "tint": 16744112,
-      "name": "Bubbles the Pink Angelfish",
-      "title": "Keep a human in the loop",
-      "bullets": [
-        "Let it draft, you approve. Always for sending, spending or deleting.",
-        "Keep a log of what it did, so you can check and undo."
-      ],
-      "tip": "Earn trust in steps: approve everything first, then auto-run only the low-risk parts.",
-      "diagram": {
-        "type": "flow",
-        "nodes": [["📝", "Plan"], ["🙋", "You approve"], ["⚡", "Act"], ["📜", "Log"]],
-        "highlight": 1
-      },
-      "quiz": {
-        "q": "When can an agent act without approval?",
-        "options": ["Always, for speed", "After it proved reliable on low-risk steps", "Never use agents"],
-        "answer": 1,
-        "why": "Trust is earned with low-risk steps first."
-      }
+      "name": "Bubbles",
+      "subject": "Sky & sea",
+      "questions": [
+        {
+          "q": "Pteranodon was a…",
+          "options": ["Giant bat", "Flying reptile, not a dinosaur", "Early bird"],
+          "answer": 1,
+          "why": "Pterosaurs were flying reptiles, close cousins of dinosaurs."
+        },
+        {
+          "q": "Which animals are living dinosaurs today?",
+          "options": ["Lizards", "Crocodiles", "Birds"],
+          "answer": 2,
+          "why": "Birds come from small feathered dinosaurs!"
+        },
+        {
+          "q": "Mosasaurus was a…",
+          "options": ["Huge fish", "Sea reptile, not a dinosaur", "Whale"],
+          "answer": 1,
+          "why": "A giant swimming reptile that ruled the ancient sea."
+        }
+      ]
     }
   ]
 }
