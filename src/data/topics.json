@@ -2,11 +2,11 @@
   "topics": [
     {
       "id": "meat",
-      "chip": "🦖 Meat-eaters",
+      "chip": "🦖 Famous ones",
       "fish": "clown",
       "tint": null,
       "name": "Coral",
-      "subject": "Meat-eaters",
+      "subject": "Famous ones",
       "questions": [
         {
           "q": "Which dinosaur is the famous 'tyrant lizard king'?",
@@ -21,20 +21,20 @@
           "why": "Small, speedy and feathered. Much smaller than the movies show."
         },
         {
-          "q": "Most meat-eating dinosaurs walked on…",
+          "q": "T. rex and Velociraptor ran on…",
           "options": ["Two legs", "Four legs", "Fins"],
           "answer": 0,
-          "why": "They ran on two strong back legs."
+          "why": "Two strong back legs, with tiny arms!"
         }
       ]
     },
     {
       "id": "longneck",
-      "chip": "🦕 Long-necks",
+      "chip": "🦕 Tall ones",
       "fish": "puffer",
       "tint": null,
       "name": "Pico",
-      "subject": "Long-necks",
+      "subject": "Tall ones",
       "questions": [
         {
           "q": "Which dinosaur had a super long neck?",
@@ -43,13 +43,13 @@
           "why": "Brachiosaurus reached up high like a giraffe."
         },
         {
-          "q": "What did long-necked dinosaurs eat?",
-          "options": ["Plants", "Other dinosaurs", "Only fish"],
+          "q": "What did long-necked dinosaurs munch on?",
+          "options": ["Leaves and plants", "Pizza", "Ice cream"],
           "answer": 0,
           "why": "They were gentle plant-eaters."
         },
         {
-          "q": "Long-necks were among the ___ land animals ever.",
+          "q": "Tall long-necks were among the ___ land animals ever.",
           "options": ["Smallest", "Largest", "Quietest"],
           "answer": 1,
           "why": "Some were longer than three buses!"
@@ -58,11 +58,11 @@
     },
     {
       "id": "horned",
-      "chip": "🦏 Horned",
+      "chip": "🦏 Horn heads",
       "fish": "angel",
       "tint": null,
       "name": "Angel",
-      "subject": "Horned",
+      "subject": "Horn heads",
       "questions": [
         {
           "q": "How many horns did Triceratops have?",
@@ -86,11 +86,11 @@
     },
     {
       "id": "armored",
-      "chip": "🛡️ Armored",
+      "chip": "🛡️ Tough ones",
       "fish": "tang",
       "tint": null,
       "name": "Dory",
-      "subject": "Armored",
+      "subject": "Tough ones",
       "questions": [
         {
           "q": "Which dinosaur had back plates and a spiky tail?",
