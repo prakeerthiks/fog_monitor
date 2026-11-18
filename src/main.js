@@ -78,18 +78,20 @@ const pointer = { x: 0, y: 0 };
 let focus = null; // TeacherFish | null
 
 const DEG = Math.PI / 180;
+const isReel = () => document.body.classList.contains('reel');
 function cameraTargets(t) {
-  const portrait = window.innerWidth / window.innerHeight < 1;
+  const portrait = isReel() || window.innerWidth / window.innerHeight < 1;
   // orbit the camera ~10 degrees around the fish when it is talking, for a dynamic feel
   const az = focus ? 10 * DEG + Math.sin(t * 0.35) * 1.5 * DEG : Math.sin(t * 0.12) * 3 * DEG + pointer.x * 4 * DEG;
-  const dist = focus ? (portrait ? 13 : 12) : portrait ? 38 : 25;
+  const reel = isReel();
+  const dist = focus ? (reel ? 12.5 : portrait ? 13 : 12) : reel ? 34 : portrait ? 38 : 25;
   const height = focus ? 0.9 : 3.0;
   const center = focus ? FRONT_POS : new THREE.Vector3(0, -0.3, 0);
   const pos = new THREE.Vector3(center.x + Math.sin(az) * dist, center.y + height + pointer.y * 0.3, center.z + Math.cos(az) * dist);
   const right = new THREE.Vector3(Math.cos(az), 0, -Math.sin(az));
   const look = center.clone();
   if (focus) {
-    if (portrait) look.y -= 1.7; // fish sits in the upper half, scroll below
+    if (portrait) look.y -= reel ? 1.9 : 1.7; // fish sits in the upper half, scroll below
     else look.addScaledVector(right, 3.2); // fish sits on the left, scroll on the right
   }
   return { pos, look, fov: focus ? 36 : 46 };
@@ -115,7 +117,11 @@ const scrollEl = $('bubble');
 const chips = topics.map((tp) => {
   const b = document.createElement('button');
   b.className = 'chip';
-  b.textContent = tp.chip;
+  const [em, ...rest] = tp.chip.split(' ');
+  b.innerHTML = `<span class="em"></span><span class="lb"></span>`;
+  b.firstChild.textContent = em;
+  b.lastChild.textContent = ' ' + rest.join(' ');
+  b.title = rest.join(' ');
   b.onclick = () => selectTopic(tp.id);
   bar.appendChild(b);
   return b;
@@ -256,6 +262,7 @@ function leave() {
 $('done').onclick = leave;
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') leave();
+  else if (e.key === 'r' || e.key === 'R') toggleReel(!isReel());
   else if (['1', '2', '3'].includes(e.key)) answer(Number(e.key) - 1);
 });
 
@@ -268,7 +275,8 @@ window.addEventListener('pointermove', (e) => {
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 function pickFish(e) {
-  ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+  const rc = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - rc.left) / rc.width) * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(teachers.map((t) => t.obj), true);
   return hits.length ? hits[0].object.userData.teacher : null;
@@ -365,8 +373,9 @@ function handleHand(dt, nowSec, injected) {
     palmT = 0;
     return;
   }
-  const px = s.x * window.innerWidth;
-  const py = s.y * window.innerHeight;
+  const sr = stageRect();
+  const px = sr.x + s.x * sr.w;
+  const py = sr.y + s.y * sr.h;
   cursorEl.style.display = 'block';
   cursorEl.style.transform = `translate(${px}px, ${py}px)`;
   chips.forEach((c) => c.classList.remove('hover'));
@@ -420,14 +429,41 @@ function handleHand(dt, nowSec, injected) {
 }
 
 // ---------- resize + loop ----------
+function stageRect() {
+  const iw = window.innerWidth;
+  const ih = window.innerHeight;
+  if (!isReel()) return { x: 0, y: 0, w: iw, h: ih };
+  let h = ih;
+  let w = Math.round((h * 9) / 16);
+  if (w > iw) {
+    w = iw;
+    h = Math.round((w * 16) / 9);
+  }
+  return { x: Math.round((iw - w) / 2), y: Math.round((ih - h) / 2), w, h };
+}
 function resize() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h;
+  const r = stageRect();
+  const st = $('stage');
+  if (isReel()) {
+    st.style.left = r.x + 'px';
+    st.style.top = r.y + 'px';
+    st.style.width = r.w + 'px';
+    st.style.height = r.h + 'px';
+  } else {
+    st.style.left = st.style.top = st.style.width = st.style.height = '';
+  }
+  const gw = r.w;
+  const gh = isReel() ? Math.round(r.h / 2) : r.h; // reel: the game gets the bottom half
+  renderer.setSize(gw, gh, false);
+  camera.aspect = gw / gh;
   camera.updateProjectionMatrix();
 }
+function toggleReel(on) {
+  document.body.classList.toggle('reel', on);
+  resize();
+}
 window.addEventListener('resize', resize);
+if (new URLSearchParams(location.search).has('reel')) document.body.classList.add('reel');
 resize();
 
 const clock = new THREE.Clock();

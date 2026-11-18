@@ -59,6 +59,32 @@
     #cursor.palm { background: conic-gradient(#fc85ff calc(var(--p, 0) * 360deg), #fef8ecaa 0); }
     #toast { position: fixed; top: 78px; left: 50%; transform: translateX(-50%); z-index: 25; background: var(--cream-50); border: 4px solid var(--outline-brown); color: var(--olive-ink); font-size: 20px; padding: 8px 18px 10px; border-radius: var(--radius-pill); display: none; max-width: 90vw; text-align: center; }
 
+
+    /* stage: everything of the game lives here (fixed-fullscreen, or a 9:16 reel frame) */
+    #stage { position: fixed; inset: 0; transform: translateZ(0); overflow: hidden; z-index: 1; }
+
+    /* REEL MODE: 9:16 frame, your camera on the top half, the game on the bottom half */
+    body.reel { background: #111; }
+    body.reel #stage { inset: auto; background: var(--pixel-sky); }
+    body.reel #cam { display: block !important; position: absolute; left: 0; top: 0; width: 100%; height: 50%; object-fit: cover; border: 0; border-radius: 0; opacity: 1; z-index: 1; background: var(--pixel-plum); }
+    body.reel canvas#gl { position: absolute; left: 0; top: 50%; width: 100%; height: 50%; }
+    body.reel #bar { display: none; } /* in reel mode you point at a fish to pick it */
+    body.reel .chip { font-size: 22px; padding: 4px 12px 7px; border-width: 3px; box-shadow: inset 0 -4px 0 var(--lilac-100); white-space: nowrap; }
+    body.reel .chip .lb { display: none; }
+    body.reel .chip.icon { display: none; }
+    body.reel #hint { display: none; }
+    body.reel #bubble { position: absolute; right: auto; left: 50%; top: auto; bottom: 10px; width: 94%; transform: translateX(-50%) scale(.9); }
+    body.reel #bubble.open { transform: translateX(-50%) scale(1); }
+    body.reel .bubble { padding: 20px 12px 18px; border-width: 4px; border-radius: 30px; box-shadow: inset 0 -8px 0 var(--lilac-100); }
+    body.reel #who { font-size: 18px; top: -18px; left: 20px; border-width: 4px; }
+    body.reel #qcount { font-size: 15px; top: -14px; right: 18px; border-width: 3px; }
+    body.reel #qtext { font-size: 18px; line-height: 1.15; min-height: 2.3em; }
+    body.reel .opt { font-size: 15px; padding: 2px 8px 4px; margin-bottom: 4px; border-width: 3px; border-radius: 16px; gap: 8px; }
+    body.reel .opt b { width: 20px; height: 20px; line-height: 17px; font-size: 12px; border-width: 2px; }
+    body.reel #opts { margin-top: 4px; }
+    body.reel #qfeed { font-size: 14px; min-height: 1.2em; margin-top: 0; }
+    body.reel .btns { display: none; }
+
     @media (max-aspect-ratio: 1/1) {
       #bubble { right: 50%; left: auto; top: auto; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(50%) scale(.9); width: min(94vw, 500px); }
       #bubble.open { transform: translateX(50%) scale(1); }
@@ -85,6 +111,8 @@
   </style>
 </head>
 <body>
+  <div id="stage">
+  <video id="cam" playsinline muted></video>
   <canvas id="gl"></canvas>
 
   <div id="bar"></div>
@@ -101,7 +129,8 @@
     </div>
   </div>
 
-  <video id="cam" playsinline muted></video>
+  </div>
+
   <div id="cursor"></div>
   <div id="toast"></div>
 
