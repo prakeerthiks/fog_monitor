@@ -289,6 +289,7 @@ window.addEventListener('resize', () => drawStart($('startpx')));
 // start overlay (needed to unlock audio)
 $('start').addEventListener('click', () => {
   initAudio();
+  startHands(); // hand tracking is always on (turn it off with the 🖐 button)
   $('start').classList.add('gone');
 });
 
@@ -316,18 +317,10 @@ handBtn.className = 'chip icon';
 handBtn.textContent = '🖐';
 handBtn.title = 'Hand control (webcam)';
 bar.appendChild(handBtn);
-handBtn.onclick = async () => {
-  initAudio();
-  if (handsOn) {
-    hands.stop();
-    handsOn = false;
-    camVideo.style.display = 'none';
-    cursorEl.style.display = 'none';
-    handBtn.classList.remove('active');
-    return;
-  }
+async function startHands() {
+  if (handsOn) return;
   try {
-    toast('Loading hand tracking… allow the camera 📷', 8000);
+    toast('Loading hand tracking… please allow the camera 📷', 8000);
     if (!hands) {
       const { Hands } = await import('./hands.js');
       hands = new Hands(camVideo);
@@ -345,6 +338,19 @@ handBtn.onclick = async () => {
     handsOn = false;
     toast('Camera or hand tracking unavailable. Mouse and touch still work!', 5000);
   }
+}
+function stopHands() {
+  if (!handsOn) return;
+  hands.stop();
+  handsOn = false;
+  camVideo.style.display = 'none';
+  cursorEl.style.display = 'none';
+  handBtn.classList.remove('active');
+}
+handBtn.onclick = () => {
+  initAudio();
+  if (handsOn) stopHands();
+  else startHands();
 };
 
 // add data-id on chips for dwell targeting
